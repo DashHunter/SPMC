@@ -30,7 +30,7 @@
 #include "utils/log.h"
 #include "windowing/WindowingFactory.h"
 
-#include "android/jni/View.h"
+#include "androidjni/View.h"
 
 #define DEBUG_MESSAGEPUMP 0
 
@@ -205,6 +205,12 @@ bool CWinEventsAndroid::MessagePump()
       {
         // not in inputdevice cache, fetch and cache it.
         CJNIViewInputDevice view_input_device = CJNIViewInputDevice::getDevice(input_device.id);
+        if (!view_input_device)
+        {
+          // Shouldn't happen
+          CLog::Log(LOGERROR, "CWinEventsAndroid::MessagePump:caching cannot get event input device !? id(%d)", input_device.id);
+          continue;
+        }
         input_device.name = view_input_device.getName();
         CLog::Log(LOGDEBUG, "CWinEventsAndroid::MessagePump:caching  id(%d), device(%s)",
           input_device.id, input_device.name.c_str());

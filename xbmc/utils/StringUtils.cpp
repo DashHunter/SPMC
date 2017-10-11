@@ -33,7 +33,7 @@
 #include "StringUtils.h"
 #include "CharsetConverter.h"
 #if defined(TARGET_ANDROID)
-#include "android/jni/JNIThreading.h"
+#include "androidjni/JNIThreading.h"
 #endif
 #include "utils/fstrcmp.h"
 #include "Util.h"
@@ -537,6 +537,17 @@ std::string& StringUtils::RemoveDuplicatedSpacesAndTabs(std::string& str)
     ++it;
   }
   return str;
+}
+
+int StringUtils::ReturnDigits(const std::string& str)
+{
+  std::stringstream ss;
+  for (const auto& character : str)
+  {
+    if (isdigit(character))
+      ss << character;
+  }
+  return atoi(ss.str().c_str());
 }
 
 int StringUtils::Replace(std::string &str, char oldChar, char newChar)

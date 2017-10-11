@@ -45,7 +45,7 @@ namespace XFILE
         PROXY_SOCKS5,
         PROXY_SOCKS5_REMOTE,
       } ProxyType;
-    
+
       CCurlFile();
       virtual ~CCurlFile();
       virtual bool Open(const CURL& url);
@@ -64,7 +64,12 @@ namespace XFILE
       virtual int IoControl(EIoControl request, void* param);
       virtual std::string GetContentCharset(void)                { return GetServerReportedCharset(); }
 
+      bool Delete(const std::string& strURL, const std::string& strData, std::string& strHTML);
+      bool Put(const CURL& strURL, const std::string& strData, std::string& strHTML);
+      bool Put(const std::string& strURL, const std::string& strData, std::string& strHTML);
+      bool Post(const CURL& strURL, const std::string& strPostData, std::string& strHTML);
       bool Post(const std::string& strURL, const std::string& strPostData, std::string& strHTML);
+      bool Get(const CURL& strURL, std::string& strHTML);
       bool Get(const std::string& strURL, std::string& strHTML);
       bool ReadData(std::string& strHTML);
       bool Download(const std::string& strURL, const std::string& strFileName, LPDWORD pdwSize = NULL);
@@ -88,6 +93,8 @@ namespace XFILE
       void SetMimeType(std::string mimetype)                     { SetRequestHeader("Content-Type", mimetype); }
       void SetRequestHeader(const std::string& header, const std::string& value);
       void SetRequestHeader(const std::string& header, long value);
+
+      std::string GetLastEffectiveUrl();
 
       void ClearRequestHeaders();
       void SetBufferSize(unsigned int size);
@@ -154,7 +161,7 @@ namespace XFILE
       void SetCommonOptions(CReadState* state);
       void SetRequestHeaders(CReadState* state);
       void SetCorrectHeaders(CReadState* state);
-      bool Service(const std::string& strURL, std::string& strHTML);
+      bool Service(const CURL& strURL, std::string& strHTML);
 
     protected:
       CReadState*     m_state;
@@ -163,6 +170,7 @@ namespace XFILE
       int64_t         m_writeOffset;
 
       std::string     m_url;
+      std::string     m_lastEffectiveUrl;
       std::string     m_userAgent;
       std::string     m_proxy;
       std::string     m_proxyuserpass;

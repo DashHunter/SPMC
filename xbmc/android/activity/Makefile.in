@@ -18,6 +18,14 @@ SRCS      += GraphicBuffer.cpp
 SRCS      += EventLoop.cpp
 SRCS      += XBMCApp.cpp
 SRCS      += JNIMainActivity.cpp
+SRCS      += JNIXBMCVideoView.cpp
+SRCS      += JNIXBMCMainView.cpp
+SRCS      += JNIXBMCAudioManagerOnAudioFocusChangeListener.cpp
+SRCS      += JNIXBMCSurfaceTextureOnFrameAvailableListener.cpp
+SRCS      += JNIXBMCNsdManagerDiscoveryListener.cpp
+SRCS      += JNIXBMCNsdManagerRegistrationListener.cpp
+SRCS      += JNIXBMCNsdManagerResolveListener.cpp
+SRCS      += JNIXBMCMediaSession.cpp
 
 OBJS      += $(APP_GLUE) $(CPU_OBJ)
 
@@ -26,7 +34,7 @@ LIB        = activity.a
 $(LIB): $(OBJS)
 
 $(APP_GLUE):
-	$(CC) -c -I$(GLUEPATH) -o $@ $(GLUEPATH)/$(APP_GLUE:.o=.c)
+	$(CC) -c -DHAVE_INTTYPES_H -I$(GLUEPATH) -o $@ $(GLUEPATH)/$(APP_GLUE:.o=.c)
 
 $(CPU_OBJ):
 	$(CC) -c -I$(CPUPATH) -o $@ $(CPUPATH)/$(CPU_OBJ:.o=.c)

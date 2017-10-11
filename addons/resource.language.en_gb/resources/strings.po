@@ -2989,7 +2989,12 @@ msgctxt "#680"
 msgid "Verbose logging for the [B]Video[/B] component"
 msgstr ""
 
-#empty strings from id 681 to 699
+#: xbmc/settings/AdvancedSettings.cpp
+msgctxt "#681"
+msgid "Verbose logging for the [B]Database[/B] component"
+msgstr ""
+
+#empty strings from id 682 to 699
 
 msgctxt "#700"
 msgid "Cleaning up library"
@@ -3972,9 +3977,7 @@ msgctxt "#1208"
 msgid "Mount SMB shares"
 msgstr ""
 
-msgctxt "#1209"
-msgid "Force SMB v1"
-msgstr ""
+#empty string with id 1209
 
 #: xbmc/event/windows/GUIWindowEventLog.cpp
 msgctxt "#1210"
@@ -4032,10 +4035,6 @@ msgstr ""
 
 msgctxt "#1223"
 msgid "Disabled"
-msgstr ""
-
-msgctxt "#1224"
-msgid "Overwrite existing configuration"
 msgstr ""
 
 #empty strings from id 1224 to 1225
@@ -8011,7 +8010,7 @@ msgstr ""
 
 #: xbmc/video/dialogs/GUIDialogVideoSettings.cpp
 msgctxt "#16020"
-msgid "Yadif"
+msgid "Yadif (2X)"
 msgstr ""
 
 #: xbmc/video/dialogs/GUIDialogVideoSettings.cpp
@@ -8080,7 +8079,7 @@ msgstr ""
 
 #: xbmc/video/dialogs/GUIDialogVideoSettings.cpp
 msgctxt "#16036"
-msgid "Yadif (half)"
+msgid "Yadif"
 msgstr ""
 
 msgctxt "#16037"
@@ -12125,7 +12124,12 @@ msgctxt "#21342"
 msgid "There are currently no updates available for this add-on."
 msgstr ""
 
-#empty strings from id 21343 to 21358
+#empty strings from id 21343 to 21357
+
+#: system/settings/settings.xml
+msgctxt "#21358"
+msgid "Enable UPnP support"
+msgstr ""
 
 #: xbmc/dialogs/GUIDialogFileBrowser.cpp
 msgctxt "#21359"
@@ -12556,11 +12560,11 @@ msgid "Root filesystem"
 msgstr ""
 
 msgctxt "#21454"
-msgid "Cache full"
+msgid "Source too slow"
 msgstr ""
 
 msgctxt "#21455"
-msgid "Cache filled before reaching required amount for continuous playback"
+msgid "Read rate too low for continuous playback"
 msgstr ""
 
 #: xbmc/playlists/SmartPlaylist.cpp
@@ -17505,19 +17509,7 @@ msgctxt "#36461"
 msgid "Notification event describe regular processes and actions performed by the system or the user."
 msgstr ""
 
-#. Description of settings category "Services -> SMB Client" with label #1209
-#: system/settings/settings.xml
-msgctxt "#36462"
-msgid "Force ver 1 of the SMB protocol. Might solve connection issues."
-msgstr ""
-
-#. Description of settings category "Services -> SMB Client" with label #1224
-#: system/settings/settings.xml
-msgctxt "#36463"
-msgid "Overwrite the SMB client configuration (smb.conf) on restart"
-msgstr ""
-
-#empty strings from id 36464 to 36499
+#empty strings from id 36462 to 36499
 #end reservation
 
 #. label of a setting for the stereoscopic 3D mode of the GUI that is/should be applied
@@ -17802,7 +17794,43 @@ msgctxt "#36603"
 msgid "This category contains the settings for how video output is handled."
 msgstr ""
 
-#empty strings from id 36604 to 36899
+#. Label of a setting, allow the maximum smbclient protocol to be configured
+#: system/settings/settings.xml
+msgctxt "#36621"
+msgid "Maximum protocol version"
+msgstr ""
+
+#. Description of setting with label #36621 "Maximum protocol version"
+#: system/settings/settings.xml
+msgctxt "#36622"
+msgid "Set the maximum SMB protocol version that can be negotiated (default SMBv3). Reduce to SMBv2 or SMBv1 for compatibility with older NAS and Windows shares if required."
+msgstr ""
+
+#. Values for setting with label #36621 "Maximum protocol version"
+#: system/settings/settings.xml
+msgctxt "#36623"
+msgid "SMBv1"
+msgstr ""
+
+#. Values for setting with label #36621 "Maximum protocol version"
+#: system/settings/settings.xml
+msgctxt "#36624"
+msgid "SMBv2"
+msgstr ""
+
+#. Values for setting with label #36621 "Maximum protocol version"
+#: system/settings/settings.xml
+msgctxt "#36625"
+msgid "SMBv3"
+msgstr ""
+
+#. Label of a group, that allows configuration of the system SMB client
+#: system/settings/settings.xml
+msgctxt "#36626"
+msgid "Client"
+msgstr ""
+
+#empty strings from id 36627 to 36899
 
 #: xbmc/media/MediaType.cpp
 msgctxt "#36900"
@@ -18263,6 +18291,19 @@ msgctxt "#39004"
 msgid "Export"
 msgstr ""
 
-msgctxt "#3905"
+msgctxt "#39005"
 msgid "Exports nfo, thumbnail & fanart near the media file"
 msgstr ""
+
+msgctxt "#39006"
+msgid "Upload debug log..."
+msgstr ""
+
+msgctxt "#39007"
+msgid "Upload the current debug log"
+msgstr ""
+
+msgctxt "#39008"
+msgid "Accelerate hevc"
+msgstr ""
+

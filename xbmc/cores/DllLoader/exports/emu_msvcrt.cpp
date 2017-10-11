@@ -33,9 +33,6 @@
 #endif
 #include <sys/stat.h>
 #include <sys/types.h>
-#if !defined(TARGET_FREEBSD)
-#include <sys/timeb.h>
-#endif
 #include "system.h" // for HAS_DVD_DRIVE
 #ifdef HAS_DVD_DRIVE
   #ifdef TARGET_POSIX
@@ -71,9 +68,7 @@
 #include "utils/CharsetConverter.h"
 #include "utils/URIUtils.h"
 #endif
-#if defined(TARGET_ANDROID)
-#include "android/loader/AndroidDyload.h"
-#elif !defined(TARGET_WINDOWS)
+#if !defined(TARGET_WINDOWS)
 #include <dlfcn.h>
 #endif
 #include "utils/Environment.h"
@@ -114,7 +109,7 @@ extern "C" void __stdcall init_emu_environ()
   // python
 #if defined(TARGET_WINDOWS)
   // fill our array with the windows system vars
-  LPTSTR lpszVariable; 
+  LPTSTR lpszVariable;
   LPTCH lpvEnv;
   lpvEnv = GetEnvironmentStrings();
   if (lpvEnv != NULL)
@@ -140,7 +135,7 @@ extern "C" void __stdcall init_emu_environ()
   if (!CUtil::GetFrameworksPath(true).empty())
   {
     // using external python, it's build looking for xxx/lib/python2.6
-    // so point it to frameworks which is where python2.6 is located
+    // so point it to frameworks which is where python2.7 is located
     dll_putenv(std::string("PYTHONPATH=" +
       CSpecialProtocol::TranslatePath("special://frameworks")).c_str());
     dll_putenv(std::string("PYTHONHOME=" +
@@ -162,7 +157,7 @@ extern "C" void __stdcall init_emu_environ()
 
 #if defined(TARGET_ANDROID)
   std::string apkPath = getenv("XBMC_ANDROID_APK");
-  apkPath += "/assets/python2.6";
+  apkPath += "/assets/python2.7";
   dll_putenv(std::string("PYTHONHOME=" + apkPath).c_str());
   dll_putenv("PYTHONOPTIMIZE=");
   dll_putenv("PYTHONNOUSERSITE=1");
@@ -452,10 +447,7 @@ extern "C"
 
   void *dll_dlopen(const char *filename, int flag)
   {
-#if defined(TARGET_ANDROID)
-    CAndroidDyload temp;
-    return temp.Open(filename);
-#elif !defined(TARGET_WINDOWS)
+#if !defined(TARGET_WINDOWS)
     return dlopen(filename, flag);
 #else
     return NULL;
@@ -583,7 +575,7 @@ extern "C"
              err != ECONNRESET && err != ENOTCONN && err != ETIMEDOUT &&
              err != ENOBUFS && err != ENOMEM && err != ENXIO))
           errno = EIO; // exact errno is unknown or incorrect, use default error number
-        
+
         return -1;
       }
       return ret;

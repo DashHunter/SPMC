@@ -1,7 +1,7 @@
 abs_top_srcdir=@abs_top_srcdir@
 
 TOOLCHAIN=@use_toolchain@
-NDKROOT=@use_ndk@
+NDKROOT=@use_ndk_path@
 SDKROOT=@use_sdk_path@
 XBMCROOT=$(abspath $(abs_top_srcdir)/../../)
 TARBALLS_LOCATION=@use_tarballs@
@@ -10,6 +10,7 @@ HOST=@use_host@
 CPU=@use_cpu@
 NATIVEPLATFORM=@build_cpu@-@build_os@-native
 SDK_PLATFORM=@use_sdk@
+NDK_LEVEL=@use_ndk@
 RETRIEVE_TOOL=@CURL@
 ARCHIVE_TOOL=@TAR@
 PREFIX=@prefix@/@deps_dir@
@@ -57,7 +58,7 @@ OBJDUMP=@OBJDUMP@
 
 CMAKE=@prefix@/@tool_dir@/bin/cmake -DCMAKE_TOOLCHAIN_FILE=$(PREFIX)/share/Toolchain.cmake -DCMAKE_INSTALL_PREFIX=$(PREFIX)
 CFLAGS=@platform_cflags@ @platform_includes@ -isystem @prefix@/@deps_dir@/include
-LDFLAGS=-L@prefix@/@deps_dir@/lib @platform_ldflags@
+LDFLAGS=-L@prefix@/@deps_dir@/lib -L@prefix@/@deps_dir@/lib64 @platform_ldflags@
 CXXFLAGS=@platform_cxxflags@ @platform_includes@ -isystem @prefix@/@deps_dir@/include
 CPPFLAGS=@platform_cflags@ @platform_includes@ -isystem @prefix@/@deps_dir@/include
 

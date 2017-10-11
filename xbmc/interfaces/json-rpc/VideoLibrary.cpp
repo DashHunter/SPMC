@@ -28,6 +28,7 @@
 #include "utils/Variant.h"
 #include "video/VideoDatabase.h"
 #include "video/VideoLibraryQueue.h"
+#include "filesystem/File.h"
 
 using namespace JSONRPC;
 using namespace KODI::MESSAGING;
@@ -1045,14 +1046,36 @@ JSONRPC_STATUS CVideoLibrary::RemoveVideo(const CVariant &parameterObject)
   if (!videodatabase.Open())
     return InternalError;
 
+  std::string filePath;
+  bool bDeleteFile = parameterObject["deletefile"].asBoolean();;
   if (parameterObject.isMember("movieid"))
-    videodatabase.DeleteMovie((int)parameterObject["movieid"].asInteger());
+  {
+    int itemId = (int)parameterObject["movieid"].asInteger();
+    if (bDeleteFile)
+      videodatabase.GetFilePathById(itemId, filePath, VIDEODB_CONTENT_MOVIES);
+    videodatabase.DeleteMovie(itemId);
+  }
   else if (parameterObject.isMember("tvshowid"))
+  {
     videodatabase.DeleteTvShow((int)parameterObject["tvshowid"].asInteger());
+  }
   else if (parameterObject.isMember("episodeid"))
+  {
+    int itemId = (int)parameterObject["episodeid"].asInteger();
+    if (bDeleteFile)
+      videodatabase.GetFilePathById(itemId, filePath, VIDEODB_CONTENT_EPISODES);
     videodatabase.DeleteEpisode((int)parameterObject["episodeid"].asInteger());
+  }
   else if (parameterObject.isMember("musicvideoid"))
+  {
+    int itemId = (int)parameterObject["musicvideoid"].asInteger();
+    if (bDeleteFile)
+      videodatabase.GetFilePathById(itemId, filePath, VIDEODB_CONTENT_MUSICVIDEOS);
     videodatabase.DeleteMusicVideo((int)parameterObject["musicvideoid"].asInteger());
+  }
+
+  if (!filePath.empty())
+    XFILE::CFile::Delete(filePath);
 
   CJSONRPCUtils::NotifyItemUpdated();
   return ACK;
@@ -1107,7 +1130,7 @@ void CVideoLibrary::UpdateVideoTag(const CVariant &parameterObject, CVideoInfoTa
   details.SetStudio(studio);
 
   if (ParameterNotNull(parameterObject, "year"))
-    details.m_iYear = (int)parameterObject["year"].asInteger();
+    details.SetYear((int)parameterObject["year"].asInteger());
   if (ParameterNotNull(parameterObject, "plot"))
     details.SetPlot(parameterObject["plot"].asString());
   if (ParameterNotNull(parameterObject, "album"))
@@ -1124,17 +1147,17 @@ void CVideoLibrary::UpdateVideoTag(const CVariant &parameterObject, CVideoInfoTa
   if (ParameterNotNull(parameterObject, "track"))
     details.m_iTrack = (int)parameterObject["track"].asInteger();
   if (ParameterNotNull(parameterObject, "rating"))
-    details.m_fRating = parameterObject["rating"].asFloat();
+    details.SetRating(parameterObject["rating"].asFloat());
   if (ParameterNotNull(parameterObject, "userrating"))
     details.m_iUserRating = parameterObject["userrating"].asInteger();
   if (ParameterNotNull(parameterObject, "mpaa"))
     details.SetMPAARating(parameterObject["mpaa"].asString());
   if (ParameterNotNull(parameterObject, "imdbnumber"))
-    details.SetIMDBNumber(parameterObject["imdbnumber"].asString());
+    details.SetUniqueID(parameterObject["imdbnumber"].asString());
   if (ParameterNotNull(parameterObject, "premiered"))
     SetFromDBDate(parameterObject["premiered"], details.m_premiered);
   if (ParameterNotNull(parameterObject, "votes"))
-    details.SetVotes(parameterObject["votes"].asString());
+    details.SetVotes(atoi(parameterObject["votes"].asString().c_str()));
   if (ParameterNotNull(parameterObject, "lastplayed"))
     SetFromDBDateTime(parameterObject["lastplayed"], details.m_lastPlayed);
   if (ParameterNotNull(parameterObject, "firstaired"))

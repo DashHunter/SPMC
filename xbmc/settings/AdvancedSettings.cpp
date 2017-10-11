@@ -206,6 +206,8 @@ void CAdvancedSettings::Initialize()
   m_DXVAAllowHqScaling = true;
   m_videoFpsDetect = 1;
   m_videoBusyDialogDelay_ms = 500;
+  m_videoUseDroidProjectionCapture = false;
+
   m_stagefrightConfig.useAVCcodec = -1;
   m_stagefrightConfig.useHEVCcodec = -1;
   m_stagefrightConfig.useVC1codec = -1;
@@ -417,7 +419,7 @@ void CAdvancedSettings::Initialize()
 
   m_pictureExtensions = ".png|.jpg|.jpeg|.bmp|.gif|.ico|.tif|.tiff|.tga|.pcx|.cbz|.zip|.cbr|.rar|.dng|.nef|.cr2|.crw|.orf|.arw|.erf|.3fr|.dcr|.x3f|.mef|.raf|.mrw|.pef|.sr2|.rss";
   m_musicExtensions = ".nsv|.m4a|.flac|.aac|.strm|.pls|.rm|.rma|.mpa|.wav|.wma|.ogg|.mp3|.mp2|.m3u|.gdm|.imf|.m15|.sfx|.uni|.ac3|.dts|.cue|.aif|.aiff|.wpl|.ape|.mac|.mpc|.mp+|.mpp|.shn|.zip|.rar|.wv|.dsp|.xsp|.xwav|.waa|.wvs|.wam|.gcm|.idsp|.mpdsp|.mss|.spt|.rsd|.sap|.cmc|.cmr|.dmc|.mpt|.mpd|.rmt|.tmc|.tm8|.tm2|.oga|.url|.pxml|.tta|.rss|.wtv|.mka|.tak|.opus|.dff|.dsf";
-  m_videoExtensions = ".m4v|.3g2|.3gp|.nsv|.tp|.ts|.ty|.strm|.pls|.rm|.rmvb|.m3u|.m3u8|.ifo|.mov|.qt|.divx|.xvid|.bivx|.vob|.nrg|.img|.iso|.pva|.wmv|.asf|.asx|.ogm|.m2v|.avi|.bin|.dat|.mpg|.mpeg|.mp4|.mkv|.mk3d|.avc|.vp3|.svq3|.nuv|.viv|.dv|.fli|.flv|.rar|.001|.wpl|.zip|.vdr|.dvr-ms|.xsp|.mts|.m2t|.m2ts|.evo|.ogv|.sdp|.avs|.rec|.url|.pxml|.vc1|.h264|.rcv|.rss|.mpls|.webm|.bdmv|.wtv|.ssif";
+  m_videoExtensions = ".m4v|.3g2|.3gp|.nsv|.tp|.ts|.ty|.strm|.pls|.rm|.rmvb|.mpd|.ism|.ismc|.m3u|.m3u8|.ifo|.mov|.qt|.divx|.xvid|.bivx|.vob|.nrg|.img|.iso|.pva|.wmv|.asf|.asx|.ogm|.m2v|.avi|.bin|.dat|.mpg|.mpeg|.mp4|.mkv|.mk3d|.avc|.vp3|.svq3|.nuv|.viv|.dv|.fli|.flv|.rar|.001|.wpl|.zip|.vdr|.dvr-ms|.xsp|.mts|.m2t|.m2ts|.evo|.ogv|.sdp|.avs|.rec|.url|.pxml|.vc1|.h264|.rcv|.rss|.mpls|.webm|.bdmv|.wtv|.ssif";
   m_subtitlesExtensions = ".utf|.utf8|.utf-8|.sub|.srt|.smi|.rt|.txt|.ssa|.text|.ssa|.aqt|.jss|.ass|.idx|.ifo|.rar|.zip";
   m_discStubExtensions = ".disc";
   // internal music extensions
@@ -497,7 +499,7 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
   CLog::Log(LOGNOTICE, "Loaded settings file from %s", file.c_str());
 
   // Dump contents of AS.xml to debug log
-  TiXmlPrinter printer;
+  CXBMCTinyXMLRedactedPrinter printer;
   printer.SetLineBreak("\n");
   printer.SetIndent("  ");
   advancedXML.Accept(&printer);
@@ -574,6 +576,8 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
     XMLUtils::GetInt(pElement, "percentseekbackward", m_videoPercentSeekBackward, -100, 0);
     XMLUtils::GetInt(pElement, "percentseekforwardbig", m_videoPercentSeekForwardBig, 0, 100);
     XMLUtils::GetInt(pElement, "percentseekbackwardbig", m_videoPercentSeekBackwardBig, -100, 0);
+
+    XMLUtils::GetBoolean(pElement, "usedroidprojectioncapture", m_videoUseDroidProjectionCapture);
 
     TiXmlElement* pVideoExcludes = pElement->FirstChildElement("excludefromlisting");
     if (pVideoExcludes)
@@ -1113,7 +1117,6 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
         XMLUtils::GetString(pDatabase, "port", m_databaseVideo.port);
         XMLUtils::GetString(pDatabase, "user", m_databaseVideo.user);
         XMLUtils::GetString(pDatabase, "pass", m_databaseVideo.pass);
-        XMLUtils::GetString(pDatabase, "name", m_databaseVideo.name);
         XMLUtils::GetString(pDatabase, "key", m_databaseVideo.key);
         XMLUtils::GetString(pDatabase, "cert", m_databaseVideo.cert);
         XMLUtils::GetString(pDatabase, "ca", m_databaseVideo.ca);
@@ -1122,12 +1125,14 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
         XMLUtils::GetBoolean(pDatabase, "compression", m_databaseVideo.compression);
 
         CSettings::GetInstance().SetBool(CSettings::SETTING_MYSQL_ENABLED, true);
-        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_USER, g_advancedSettings.m_databaseVideo.user);
-        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_PASS, g_advancedSettings.m_databaseVideo.pass);
-        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_PORT, g_advancedSettings.m_databaseVideo.port);
-        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_HOST, g_advancedSettings.m_databaseVideo.host);
-        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_VIDEO, g_advancedSettings.m_databaseVideo.name);
+        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_USER, m_databaseVideo.user);
+        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_PASS, m_databaseVideo.pass);
+        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_PORT, m_databaseVideo.port);
+        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_HOST, m_databaseVideo.host);
       }
+      XMLUtils::GetString(pDatabase, "name", m_databaseVideo.name);
+      if (!m_databaseVideo.name.empty() && CSettings::GetInstance().GetString(CSettings::SETTING_MYSQL_VIDEO).empty())
+        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_VIDEO, m_databaseVideo.name);
     }
 
     pDatabase = pRootElement->FirstChildElement("musicdatabase");
@@ -1142,7 +1147,6 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
         XMLUtils::GetString(pDatabase, "port", m_databaseMusic.port);
         XMLUtils::GetString(pDatabase, "user", m_databaseMusic.user);
         XMLUtils::GetString(pDatabase, "pass", m_databaseMusic.pass);
-        XMLUtils::GetString(pDatabase, "name", m_databaseMusic.name);
         XMLUtils::GetString(pDatabase, "key", m_databaseMusic.key);
         XMLUtils::GetString(pDatabase, "cert", m_databaseMusic.cert);
         XMLUtils::GetString(pDatabase, "ca", m_databaseMusic.ca);
@@ -1151,12 +1155,15 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
         XMLUtils::GetBoolean(pDatabase, "compression", m_databaseMusic.compression);
 
         CSettings::GetInstance().SetBool(CSettings::SETTING_MYSQL_ENABLED, true);
-        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_USER, g_advancedSettings.m_databaseMusic.user);
-        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_PASS, g_advancedSettings.m_databaseMusic.pass);
-        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_PORT, g_advancedSettings.m_databaseMusic.port);
-        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_HOST, g_advancedSettings.m_databaseMusic.host);
-        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_MUSIC, g_advancedSettings.m_databaseMusic.name);
+        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_USER, m_databaseMusic.user);
+        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_PASS, m_databaseMusic.pass);
+        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_PORT, m_databaseMusic.port);
+        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_HOST, m_databaseMusic.host);
+        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_MUSIC, m_databaseMusic.name);
       }
+      XMLUtils::GetString(pDatabase, "name", m_databaseMusic.name);
+      if (!m_databaseVideo.name.empty() && CSettings::GetInstance().GetString(CSettings::SETTING_MYSQL_MUSIC).empty())
+        CSettings::GetInstance().SetString(CSettings::SETTING_MYSQL_MUSIC, m_databaseMusic.name);
     }
   }
   pDatabase = pRootElement->FirstChildElement("tvdatabase");
@@ -1447,6 +1454,7 @@ void CAdvancedSettings::SettingOptionsLoggingComponentsFiller(const CSetting *se
 #ifdef HAVE_LIBCEC
   list.push_back(std::make_pair(g_localizeStrings.Get(679), LOGCEC));
 #endif
+  list.push_back(std::make_pair(g_localizeStrings.Get(681), LOGDATABASE));
 }
 
 void CAdvancedSettings::setExtraLogLevel(const std::vector<CVariant> &components)

@@ -40,11 +40,8 @@ CGUIVideoControl::~CGUIVideoControl(void)
 
 void CGUIVideoControl::Process(unsigned int currentTime, CDirtyRegionList &dirtyregions)
 {
-  g_renderManager.FrameMove();
-
   // TODO Proper processing which marks when its actually changed. Just mark always for now.
-  if (g_renderManager.IsGuiLayer())
-    MarkDirtyRegion();
+  MarkDirtyRegion();
 
   CGUIControl::Process(currentTime, dirtyregions);
 }
@@ -85,8 +82,7 @@ void CGUIVideoControl::Render()
       g_graphicsContext.SetScissors(old);
       g_graphicsContext.EndPaint();
     }
-    else
-      g_renderManager.Render(false, 0, alpha);
+    g_renderManager.Render(false, 0, alpha);
 #else
     ((CDummyVideoPlayer *)(g_application.m_pPlayer->GetInternal()).get())->Render();
 #endif

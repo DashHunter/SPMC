@@ -18,9 +18,9 @@
  *
  */
 
-#define AC3_ENCODE_BITRATE 640000
 #define DTS_ENCODE_BITRATE 1411200
 
+#include "cores/AudioEngine/Interfaces/AE.h"
 #include "cores/AudioEngine/Encoders/AEEncoderFFmpeg.h"
 #include "cores/AudioEngine/Utils/AEUtil.h"
 #include "utils/log.h"
@@ -33,8 +33,6 @@ CAEEncoderFFmpeg::CAEEncoderFFmpeg():
   m_CodecCtx      (NULL ),
   m_SwrCtx        (NULL ),
   m_BufferSize    (0    ),
-  m_OutputSize    (0    ),
-  m_OutputRatio   (0.0  ),
   m_SampleRateMul (0.0  ),
   m_NeededFrames  (0    ),
   m_NeedConversion(false),
@@ -123,8 +121,10 @@ bool CAEEncoderFFmpeg::Initialize(AEAudioFormat &format, bool allow_planar_input
   {
     m_CodecName = "AC3";
     m_CodecID   = AV_CODEC_ID_AC3;
-    m_PackFunc  = &CAEPackIEC61937::PackAC3;
-    m_BitRate   = AC3_ENCODE_BITRATE;
+    if (CSettings::GetInstance().GetInt(CSettings::SETTING_AUDIOOUTPUT_PROCESSQUALITY) > AE_QUALITY_MID)
+      m_BitRate = 640000;
+    else
+      m_BitRate = 384000;
     codec = avcodec_find_encoder(m_CodecID);
   }
 
@@ -228,8 +228,6 @@ bool CAEEncoderFFmpeg::Initialize(AEAudioFormat &format, bool allow_planar_input
 
   m_CurrentFormat = format;
   m_NeededFrames  = format.m_frames;
-  m_OutputSize    = m_PackFunc(NULL, 0, m_Buffer);
-  m_OutputRatio   = (double)m_NeededFrames / m_OutputSize;
   m_SampleRateMul = 1.0 / (double)m_CodecCtx->sample_rate;
 
   if (m_NeedConversion)
@@ -244,7 +242,7 @@ bool CAEEncoderFFmpeg::Initialize(AEAudioFormat &format, bool allow_planar_input
       return false;
     }
   }
-  CLog::Log(LOGNOTICE, "CAEEncoderFFmpeg::Initialize - %s encoder ready", m_CodecName.c_str());
+  CLog::Log(LOGNOTICE, "CAEEncoderFFmpeg::Initialize - %s encoder ready. Using %d kb/s bitrate", m_CodecName.c_str(), m_BitRate / 100);
   return true;
 }
 
@@ -327,8 +325,8 @@ int CAEEncoderFFmpeg::Encode(float *data, unsigned int frames)
 
   /* initialize the output packet */
   av_init_packet(&m_Pkt);
-  m_Pkt.size      = sizeof(m_Buffer) - IEC61937_DATA_OFFSET;
-  m_Pkt.data      = m_Buffer + IEC61937_DATA_OFFSET;
+  m_Pkt.size      = sizeof(m_Buffer);
+  m_Pkt.data      = m_Buffer;
 
   /* encode it */
   int ret = avcodec_encode_audio2(m_CodecCtx, &m_Pkt, frame, &got_output);
@@ -342,13 +340,7 @@ int CAEEncoderFFmpeg::Encode(float *data, unsigned int frames)
     return 0;
   }
 
-  /* pack it into an IEC958 frame */
-  m_BufferSize = m_PackFunc(NULL, m_Pkt.size, m_Buffer);
-  if (m_BufferSize != m_OutputSize)
-  {
-    m_OutputSize  = m_BufferSize;
-    m_OutputRatio = (double)m_NeededFrames / m_OutputSize;
-  }
+  m_BufferSize = m_Pkt.size;
 
   /* free the packet */
   av_free_packet(&m_Pkt);
@@ -382,8 +374,8 @@ int CAEEncoderFFmpeg::Encode(uint8_t *in, int in_size, uint8_t *out, int out_siz
 
   /* initialize the output packet */
   av_init_packet(&m_Pkt);
-  m_Pkt.size      = out_size - IEC61937_DATA_OFFSET;
-  m_Pkt.data      = out + IEC61937_DATA_OFFSET;
+  m_Pkt.size      = out_size;
+  m_Pkt.data      = out;
 
   /* encode it */
   int ret = avcodec_encode_audio2(m_CodecCtx, &m_Pkt, frame, &got_output);
@@ -397,9 +389,8 @@ int CAEEncoderFFmpeg::Encode(uint8_t *in, int in_size, uint8_t *out, int out_siz
     return 0;
   }
 
-  /* pack it into an IEC958 frame */
-  m_PackFunc(NULL, m_Pkt.size, out);
-
+  m_BufferSize = m_Pkt.size;
+  
   /* free the packet */
   av_free_packet(&m_Pkt);
 
@@ -419,13 +410,6 @@ int CAEEncoderFFmpeg::GetData(uint8_t **data)
 
 double CAEEncoderFFmpeg::GetDelay(unsigned int bufferSize)
 {
-  if (!m_CodecCtx)
-    return 0;
-
-  int frames = m_CodecCtx->delay;
-  if (m_BufferSize)
-    frames += m_NeededFrames;
-
-  return ((double)frames + ((double)bufferSize * m_OutputRatio)) * m_SampleRateMul;
+  return 0;
 }
 

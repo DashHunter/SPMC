@@ -93,7 +93,7 @@ void CLog::LogString(int logLevel, const std::string& logString)
       WriteLogString(s_globals.m_repeatLogLevel, strData2);
       s_globals.m_repeatCount = 0;
     }
-    
+
     s_globals.m_repeatLine = strData;
     s_globals.m_repeatLogLevel = logLevel;
 
@@ -115,18 +115,20 @@ bool CLog::Init(const std::string& path)
   return s_globals.m_platform.OpenLogFile(path + appName + ".log", path + appName + ".old.log");
 }
 
-void CLog::MemDump(char *pData, int length)
+void CLog::MemDump(const char *pData, int length)
 {
   Log(LOGDEBUG, "MEM_DUMP: Dumping from %p", pData);
+  size_t offset = 0;
   for (int i = 0; i < length; i+=16)
   {
     std::string strLine = StringUtils::Format("MEM_DUMP: %04x ", i);
-    char *alpha = pData;
+    size_t offsetAlpha = offset;
     for (int k=0; k < 4 && i + 4*k < length; k++)
     {
       for (int j=0; j < 4 && i + 4*k + j < length; j++)
       {
-        std::string strFormat = StringUtils::Format(" %02x", (unsigned char)*pData++);
+        std::string strFormat = StringUtils::Format(" %02x", (unsigned char)*(pData + offset));
+        offset++;        
         strLine += strFormat;
       }
       strLine += " ";
@@ -136,11 +138,11 @@ void CLog::MemDump(char *pData, int length)
       strLine += " ";
     for (int j=0; j < 16 && i + j < length; j++)
     {
-      if (*alpha > 31)
-        strLine += *alpha;
+      if (*(pData + offsetAlpha) > 31)
+        strLine += *(pData + offsetAlpha);
       else
         strLine += '.';
-      alpha++;
+      offsetAlpha++;
     }
     Log(LOGDEBUG, "%s", strLine.c_str());
   }
@@ -198,20 +200,22 @@ void CLog::PrintDebugString(const std::string& line)
 
 bool CLog::WriteLogString(int logLevel, const std::string& logString)
 {
-  static const char* prefixFormat = "%02.2d:%02.2d:%02.2d T:%" PRIu64" %7s: ";
+  static const char* prefixFormat = "%02d:%02d:%02d.%03d T:%" PRIu64" %7s: ";
 
   std::string strData(logString);
   /* fixup newline alignment, number of spaces should equal prefix length */
   StringUtils::Replace(strData, "\n", "\n                                            ");
 
   int hour, minute, second;
-  s_globals.m_platform.GetCurrentLocalTime(hour, minute, second);
-  
+  double millisecond;
+  s_globals.m_platform.GetCurrentLocalTime(hour, minute, second, millisecond);
+
   strData = StringUtils::Format(prefixFormat,
                                   hour,
                                   minute,
                                   second,
-                                  (uint64_t)CThread::GetCurrentThreadId(),
+                                  static_cast<int>(millisecond),
+                                  static_cast<uint64_t>(CThread::GetCurrentThreadId()),
                                   levelNames[logLevel]) + strData;
 
   return s_globals.m_platform.WriteStringToLog(strData);

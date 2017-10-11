@@ -749,6 +749,8 @@ bool CCPUInfo::readProcStat(unsigned long long& user, unsigned long long& nice,
       total = (double)(coreUser + coreNice + coreSystem + coreIdle + coreIO);
       if(total != 0.0f)
         iter->second.m_fPct = ((double)(coreUser + coreNice + coreSystem) * 100.0) / total;
+      else
+        iter->second.m_fPct = 0.0f;
 
       iter->second.m_user += coreUser;
       iter->second.m_nice += coreNice;
@@ -786,6 +788,14 @@ bool CCPUInfo::readProcStat(unsigned long long& user, unsigned long long& nice,
   int num = sscanf(buf, "cpu %llu %llu %llu %llu %llu %*s\n", &user, &nice, &system, &idle, &io);
   if (num < 5)
     io = 0;
+
+  // zero out cpu percents, cpu's can idle and disappear.
+  for (int i = 0; i < m_cpuCount; i++)
+  {
+    std::map<int, CoreInfo>::iterator iter = m_cores.find(i);
+    if (iter != m_cores.end())
+      iter->second.m_fPct = 0.0;
+  }
 
   while (fgets(buf, sizeof(buf), m_fProcStat) && num >= 4)
   {
@@ -920,7 +930,7 @@ void CCPUInfo::ReadCPUFeatures()
   #endif
 #elif defined(LINUX)
 // empty on purpose, the implementation is in the constructor
-#elif !defined(__powerpc__) && !defined(__ppc__) && !defined(__arm__)
+#elif !defined(__powerpc__) && !defined(__ppc__) && !defined(__arm__) && !defined(__aarch64__)
   m_cpuFeatures |= CPU_FEATURE_MMX;
 #elif defined(__powerpc__) || defined(__ppc__)
   m_cpuFeatures |= CPU_FEATURE_ALTIVEC;

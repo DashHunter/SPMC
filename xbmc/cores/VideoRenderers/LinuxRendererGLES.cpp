@@ -54,7 +54,7 @@ extern "C" {
 #include "libswscale/swscale.h"
 }
 
-#if defined(__ARM_NEON__)
+#if defined(__ARM_NEON__) && !defined(__LP64__)
 #include "yuv2rgb.neon.h"
 #include "utils/CPUInfo.h"
 #endif
@@ -629,18 +629,20 @@ void CLinuxRendererGLES::RenderUpdateVideo(bool clear, DWORD flags, DWORD alpha)
         g_graphicsContext.SetStereoView(RENDER_STEREO_VIEW_OFF);
 
       CRect dstRect(m_destRect);
-      CRect srcRect(m_sourceRect);
       switch (stereo_mode)
       {
         case RENDER_STEREO_MODE_SPLIT_HORIZONTAL:
           dstRect.y2 *= 2.0;
-          srcRect.y2 *= 2.0;
-        break;
+          break;
 
         case RENDER_STEREO_MODE_SPLIT_VERTICAL:
           dstRect.x2 *= 2.0;
-          srcRect.x2 *= 2.0;
-        break;
+          break;
+
+        case RENDER_STEREO_MODE_MONO:
+          dstRect.y2 = dstRect.y2 * (dstRect.y2 / m_sourceRect.y2);
+          dstRect.x2 = dstRect.x2 * (dstRect.x2 / m_sourceRect.x2);
+          break;
 
         default:
         break;
@@ -652,8 +654,49 @@ void CLinuxRendererGLES::RenderUpdateVideo(bool clear, DWORD flags, DWORD alpha)
         case 90:
         case 270:
         {
-          int diff = (int) ((dstRect.Height() - dstRect.Width()) / 2);
-          dstRect = CRect(dstRect.x1 - diff, dstRect.y1, dstRect.x2 + diff, dstRect.y2);
+          int diffX = 0;
+          int diffY = 0;
+          int centerX = 0;
+          int centerY = 0;
+
+          int newWidth = dstRect.Height(); // new width is old height
+          int newHeight = dstRect.Width(); // new height is old width
+          int diffWidth = newWidth - dstRect.Width(); // difference between old and new width
+          int diffHeight = newHeight - dstRect.Height(); // difference between old and new height
+
+          // if the new width is bigger then the old or
+          // the new height is bigger then the old - we need to scale down
+          if (diffWidth > 0 || diffHeight > 0 )
+          {
+            float aspectRatio = GetAspectRatio();
+            // scale to fit screen width because
+            // the difference in width is bigger then the
+            // difference in height
+            if (diffWidth > diffHeight)
+            {
+              newWidth = dstRect.Width(); // clamp to the width of the old dest rect
+              newHeight *= aspectRatio;
+            }
+            else // scale to fit screen height
+            {
+              newHeight = dstRect.Height(); // clamp to the height of the old dest rect
+              newWidth /= aspectRatio;
+            }
+          }
+
+          // calculate the center point of the view
+          centerX = m_viewRect.x1 + m_viewRect.Width() / 2;
+          centerY = m_viewRect.y1 + m_viewRect.Height() / 2;
+
+          // calculate the number of pixels we need to go in each
+          // x direction from the center point
+          diffX = newWidth / 2;
+          // calculate the number of pixels we need to go in each
+          // y direction from the center point
+          diffY = newHeight / 2;
+
+          dstRect = CRect(centerX - diffX, centerY - diffY, centerX + diffX, centerY + diffY);
+
           break;
         }
 
@@ -661,7 +704,7 @@ void CLinuxRendererGLES::RenderUpdateVideo(bool clear, DWORD flags, DWORD alpha)
           break;
       }
 
-      mci->RenderUpdate(srcRect, dstRect);
+      mci->RenderUpdate(dstRect);
     }
   }
 #endif
@@ -1157,9 +1200,6 @@ void CLinuxRendererGLES::ReleaseBuffer(int idx)
   {
     if (buf.mediacodec)
     {
-      // The media buffer has been queued to the SurfaceView but we didn't render it
-      // We have to do to the updateTexImage or it will get stuck
-      buf.mediacodec->UpdateTexImage();
       SAFE_RELEASE(buf.mediacodec);
     }
   }
@@ -2296,7 +2336,7 @@ void CLinuxRendererGLES::UploadYV12Texture(int source)
       m_rgbBuffer = new BYTE[m_rgbBufferSize];
     }
 
-#if defined(__ARM_NEON__)
+#if defined(__ARM_NEON__) && !defined(__LP64__)
     if (g_cpuInfo.GetCPUFeatures() & CPU_FEATURE_NEON)
     {
       yuv420_2_rgb8888_neon(m_rgbBuffer, im->plane[0], im->plane[2], im->plane[1],
@@ -3309,19 +3349,12 @@ bool CLinuxRendererGLES::Supports(EINTERLACEMETHOD method)
       return false;
   }
 
-#if (defined(__i386__) || defined(__x86_64__))
   if(method == VS_INTERLACEMETHOD_YADIF
   || method == VS_INTERLACEMETHOD_YADIF_HALF
   || method == VS_INTERLACEMETHOD_RENDER_BOB
   || method == VS_INTERLACEMETHOD_SW_FFMPEG
   || method == VS_INTERLACEMETHOD_SW_BLEND
   || method == VS_INTERLACEMETHOD_RENDER_BOB_INVERTED)
-#else
-  if(method == VS_INTERLACEMETHOD_SW_FFMPEG
-  || method == VS_INTERLACEMETHOD_SW_BLEND
-  || method == VS_INTERLACEMETHOD_RENDER_BOB
-  || method == VS_INTERLACEMETHOD_RENDER_BOB_INVERTED)
-#endif
     return true;
 
   return false;
@@ -3403,11 +3436,7 @@ EINTERLACEMETHOD CLinuxRendererGLES::AutoInterlaceMethod()
   if(m_renderMethod & RENDER_IMXMAP)
     return VS_INTERLACEMETHOD_IMX_FASTMOTION;
 
-#if !defined(TARGET_ANDROID) && (defined(__i386__) || defined(__x86_64__))
   return VS_INTERLACEMETHOD_YADIF_HALF;
-#else
-  return VS_INTERLACEMETHOD_RENDER_BOB;
-#endif
 }
 
 CRenderInfo CLinuxRendererGLES::GetRenderInfo()

@@ -43,6 +43,9 @@
 #include "LangInfo.h"
 #include "input/Key.h"
 #include "ContextMenuManager.h"
+#if defined (TARGET_ANDROID)
+  #include "android/activity/AndroidFeatures.h"
+#endif
 
 #include <utility>
 
@@ -193,6 +196,9 @@ void CGUIWindowAddonBrowser::GetContextButtons(int itemNumber, CContextButtons& 
 
 bool CGUIWindowAddonBrowser::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
 {
+  if (itemNumber < 0 || itemNumber >= m_vecItems->Size()) 
+    return true;
+  
   CFileItemPtr pItem = m_vecItems->Get(itemNumber);
 
   std::string addonId = pItem->GetProperty("Addon.ID").asString();
@@ -551,6 +557,14 @@ int CGUIWindowAddonBrowser::SelectAddonID(const std::vector<ADDON::TYPE> &types,
     CFileItemPtr item(CAddonsDirectory::FileItemFromAddon(*addon, (*addon)->ID()));
     if (!items.Contains(item->GetPath()))
     {
+#if defined(TARGET_ANDROID)
+      // only show "skin.re-touched" on fire tables and iOS.
+      if ((*addon)->ID() == "skin.re-touched")
+      {
+        if (!CAndroidFeatures::HasTouchScreen())
+          continue;
+      }
+#endif
       items.Add(item);
       addonMap.insert(std::make_pair(item->GetPath(), *addon));
     }

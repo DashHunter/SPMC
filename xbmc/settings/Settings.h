@@ -140,6 +140,7 @@ public:
   static const std::string SETTING_VIDEOPLAYER_ACCELMPEG2;
   static const std::string SETTING_VIDEOPLAYER_ACCELMPEG4;
   static const std::string SETTING_VIDEOPLAYER_ACCELH264;
+  static const std::string SETTING_VIDEOPLAYER_ACCELHEVC;
   static const std::string SETTING_VIDEOPLAYER_LIMITGUIUPDATE;
   static const std::string SETTING_MYVIDEOS_SELECTACTION;
   static const std::string SETTING_MYVIDEOS_EXTRACTFLAGS;
@@ -267,6 +268,7 @@ public:
   static const std::string SETTING_WEATHER_ADDON;
   static const std::string SETTING_WEATHER_ADDONSETTINGS;
   static const std::string SETTING_SERVICES_DEVICENAME;
+  static const std::string SETTING_SERVICES_UPNP;
   static const std::string SETTING_SERVICES_UPNPSERVER;
   static const std::string SETTING_SERVICES_UPNPANNOUNCE;
   static const std::string SETTING_SERVICES_UPNPLOOKFOREXTERNALSUBTITLES;
@@ -292,8 +294,7 @@ public:
   static const std::string SETTING_SERVICES_AIRPLAYVIDEOSUPPORT;
   static const std::string SETTING_SMB_WINSSERVER;
   static const std::string SETTING_SMB_WORKGROUP;
-  static const std::string SETTING_SMB_FORCEV1;
-  static const std::string SETTING_SMB_OVERWRITECONF;
+  static const std::string SETTING_SMB_MAXPROTOCOL;
   static const std::string SETTING_VIDEOSCREEN_MONITOR;
   static const std::string SETTING_VIDEOSCREEN_SCREEN;
   static const std::string SETTING_VIDEOSCREEN_RESOLUTION;
@@ -349,6 +350,7 @@ public:
   static const std::string SETTING_DEBUG_EXTRALOGGING;
   static const std::string SETTING_DEBUG_SETEXTRALOGLEVEL;
   static const std::string SETTING_DEBUG_SCREENSHOTPATH;
+  static const std::string SETTING_DEBUG_UPLOADLOG;
   static const std::string SETTING_EVENTLOG_ENABLED;
   static const std::string SETTING_EVENTLOG_ENABLED_NOTIFICATIONS;
   static const std::string SETTING_EVENTLOG_SHOW;
@@ -371,7 +373,7 @@ public:
   static const std::string SETTING_GENERAL_ADDONFOREIGNFILTER;
   static const std::string SETTING_GENERAL_ADDONBROKENFILTER;
   static const std::string SETTING_THUMBNAILS_CLEANUP;
- 
+
   static const std::string SETTING_MYSQL_ENABLED;
   static const std::string SETTING_MYSQL_HOST;
   static const std::string SETTING_MYSQL_PORT;
@@ -379,7 +381,7 @@ public:
   static const std::string SETTING_MYSQL_PASS;
   static const std::string SETTING_MYSQL_VIDEO;
   static const std::string SETTING_MYSQL_MUSIC;
-  
+
   /*!
    \brief Creates a new settings wrapper around a new settings manager.
 

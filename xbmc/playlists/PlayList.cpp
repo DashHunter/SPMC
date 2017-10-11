@@ -37,6 +37,7 @@
 #include <sstream>
 #include <utility>
 #include <vector>
+#include <random>
 
 
 using namespace MUSIC_INFO;
@@ -93,6 +94,9 @@ void CPlayList::Add(const CFileItemPtr &item, int iPosition, int iOrder)
     item->m_iprogramCount = iOldSize;
   else
     item->m_iprogramCount = iOrder;
+
+  if (item->IsVideoDb())
+    item->SetPath(item->GetVideoInfoTag()->m_strFileNameAndPath);
 
   // increment the playable counter
   item->ClearProperty("unplayable");
@@ -276,7 +280,8 @@ void CPlayList::Shuffle(int iPosition)
     CLog::Log(LOGDEBUG,"%s shuffling at pos:%i", __FUNCTION__, iPosition);
 
     ivecItems it = m_vecItems.begin() + iPosition;
-    std::random_shuffle(it, m_vecItems.end());
+    std::mt19937 r{std::random_device{}()};
+    std::shuffle(it, m_vecItems.end(), r);
 
     // the list is now shuffled!
     m_bShuffled = true;
@@ -287,7 +292,7 @@ struct SSortPlayListItem
 {
   static bool PlaylistSort(const CFileItemPtr &left, const CFileItemPtr &right)
   {
-    return (left->m_iprogramCount <= right->m_iprogramCount);
+    return (left->m_iprogramCount < right->m_iprogramCount);
   }
 };
 

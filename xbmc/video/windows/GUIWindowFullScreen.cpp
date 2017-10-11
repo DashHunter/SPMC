@@ -52,6 +52,8 @@
 #include <algorithm>
 #if defined(TARGET_DARWIN)
 #include "linux/LinuxResourceCounter.h"
+#elif defined(TARGET_ANDROID)
+#include "android/activity/XBMCApp.h"
 #endif
 
 using namespace KODI::MESSAGING;
@@ -142,6 +144,15 @@ bool CGUIWindowFullScreen::OnAction(const CAction &action)
   case ACTION_TRIGGER_OSD:
     TriggerOSD();
     return true;
+
+  case ACTION_PICTUREINPICTURE:
+#if defined(TARGET_ANDROID)
+    if (CJNIBase::GetSDKVersion() >= 24)
+    {
+      return false;
+    }
+#endif
+    // Fallthrough
 
   case ACTION_SHOW_GUI:
     {
@@ -554,13 +565,12 @@ void CGUIWindowFullScreen::FrameMove()
     SET_CONTROL_HIDDEN(BLUE_BAR);
   }
 
-  g_renderManager.FrameMove();
+  CGUIWindow::FrameMove();
 }
 
 void CGUIWindowFullScreen::Process(unsigned int currentTime, CDirtyRegionList &dirtyregion)
 {
-  if (g_renderManager.IsGuiLayer())
-    MarkDirtyRegion();
+  MarkDirtyRegion();
 
   CGUIWindow::Process(currentTime, dirtyregion);
 

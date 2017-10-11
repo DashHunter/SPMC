@@ -30,8 +30,15 @@
 #include "DVDDemuxBXA.h"
 #include "DVDDemuxCDDA.h"
 #include "DVDDemuxPVRClient.h"
+#include "DVDDemuxAdaptive.h"
 #include "pvr/PVRManager.h"
 #include "pvr/addons/PVRClients.h"
+
+#include "guilib/GraphicContext.h"
+#include "settings/DisplaySettings.h"
+#ifdef TARGET_ANDROID
+#include "android/activity/XBMCApp.h"
+#endif
 
 using namespace PVR;
 
@@ -39,6 +46,31 @@ CDVDDemux* CDVDFactoryDemuxer::CreateDemuxer(CDVDInputStream* pInputStream, bool
 {
   if (!pInputStream)
     return NULL;
+
+  // Try to open the Adaptive demuxer
+  if (pInputStream->GetFileItem().GetMimeType() == "video/vnd.mpeg.dash.mpd" || pInputStream->GetFileItem().IsType(".mpd")  //MPD
+      || pInputStream->GetFileItem().GetMimeType() == "application/vnd.ms-sstr+xml" || pInputStream->GetFileItem().IsType(".ismc")
+      )
+  {
+    std::unique_ptr<CDVDDemuxAdaptive> demuxer(new CDVDDemuxAdaptive());
+#ifdef TARGET_ANDROID
+    CPointInt maxres = CXBMCApp::GetMaxDisplayResolution();
+#else
+    // Find larger possible resolution
+    RESOLUTION_INFO res_info = CDisplaySettings::GetInstance().GetResolutionInfo(g_graphicsContext.GetVideoResolution());
+    for (unsigned int i=0; i<CDisplaySettings::GetInstance().ResolutionInfoSize(); ++i)
+    {
+      RESOLUTION_INFO res = CDisplaySettings::GetInstance().GetResolutionInfo(i);
+      if (res.iWidth > res_info.iWidth || res.iHeight > res_info.iHeight)
+        res_info = res;
+    }
+    CPointInt maxres = CPointInt(res_info.iWidth, res_info.iHeight);
+#endif
+    if (demuxer->Open(pInputStream, maxres.x, maxres.y))
+      return demuxer.release();
+    else
+      return NULL;
+  }
 
   // Try to open the AirTunes demuxer
   if (pInputStream->IsStreamType(DVDSTREAM_TYPE_FILE) && pInputStream->GetContent().compare("audio/x-xbmc-pcm") == 0 )
@@ -51,7 +83,7 @@ CDVDDemux* CDVDFactoryDemuxer::CreateDemuxer(CDVDInputStream* pInputStream, bool
     else
       return NULL;
   }
-  
+
   // Try to open CDDA demuxer
   if (pInputStream->IsStreamType(DVDSTREAM_TYPE_FILE) && pInputStream->GetContent().compare("application/octet-stream") == 0)
   {

@@ -373,7 +373,7 @@ bool CGUIWindowVideoBase::ShowIMDB(CFileItemPtr item, const ScraperPtr &info2, b
   if (bHasInfo)
   {
     if (!info || info->Content() == CONTENT_NONE) // disable refresh button
-      movieDetails.m_strIMDBNumber = "xx"+movieDetails.m_strIMDBNumber;
+      movieDetails.SetUniqueID("xx"+movieDetails.GetUniqueID());
     *item->GetVideoInfoTag() = movieDetails;
     pDlgInfo->SetMovie(item.get());
     pDlgInfo->Open();
@@ -633,6 +633,7 @@ bool CGUIWindowVideoBase::OnSelect(int iItem)
 
 bool CGUIWindowVideoBase::OnFileAction(int iItem, int action)
 {
+  if (iItem < 0 || iItem >= m_vecItems->Size()) return true;
   CFileItemPtr item = m_vecItems->Get(iItem);
 
   // Reset the current start offset. The actual resume
@@ -1495,14 +1496,14 @@ void CGUIWindowVideoBase::AddToDatabase(int iItem)
   // everything is ok, so add to database
   m_database.Open();
   int idMovie = m_database.AddMovie(pItem->GetPath());
-  movie.m_strIMDBNumber = StringUtils::Format("xx%08i", idMovie);
+  movie.SetUniqueID(StringUtils::Format("xx%08i", idMovie));
   m_database.SetDetailsForMovie(pItem->GetPath(), movie, pItem->GetArt());
   m_database.Close();
 
   // done...
   CGUIDialogOK::ShowAndGetInput(CVariant{20177}, CVariant{movie.m_strTitle},
                                 CVariant{StringUtils::Join(movie.m_genre, g_advancedSettings.m_videoItemSeparator)},
-                                CVariant{movie.m_strIMDBNumber});
+                                CVariant{movie.GetUniqueID()});
 
   // library view cache needs to be cleared
   CUtil::DeleteVideoDatabaseDirectoryCache();

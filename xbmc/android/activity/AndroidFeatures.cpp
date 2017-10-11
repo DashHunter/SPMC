@@ -22,7 +22,9 @@
 #include "utils/log.h"
 
 #include <cpu-features.h>
-#include "android/jni/JNIThreading.h"
+#include "androidjni/Context.h"
+#include "androidjni/JNIThreading.h"
+#include "androidjni/PackageManager.h"
 
 bool CAndroidFeatures::HasNeon()
 {
@@ -74,3 +76,30 @@ int CAndroidFeatures::GetCPUCount()
   return count;
 }
 
+bool CAndroidFeatures::HasTouchScreen()
+{
+  static int hastouchscreen = -1;
+  if (hastouchscreen == -1)
+  {
+    if (CJNIContext::GetPackageManager().hasSystemFeature("android.hardware.touchscreen"))
+      hastouchscreen = 1;
+    else
+      hastouchscreen = 0;
+  }
+
+  return (hastouchscreen == 1);
+}
+
+bool CAndroidFeatures::IsLeanback()
+{
+  static int isleanback = -1;
+  if (isleanback == -1)
+  {
+    if (CJNIContext::GetPackageManager().hasSystemFeature("android.software.leanback"))
+      isleanback = 1;
+    else
+      isleanback = 0;
+  }
+
+  return (isleanback == 1);
+}

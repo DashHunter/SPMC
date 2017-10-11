@@ -18,8 +18,6 @@
  *
  */
 
-#include "system.h"
-
 #if defined(TARGET_ANDROID)
 
 #include "AndroidAppFile.h"
@@ -31,13 +29,14 @@
 #include "utils/URIUtils.h"
 #include <jni.h>
 #include <android/bitmap.h>
-#include "android/jni/Context.h"
-#include "android/jni/Build.h"
-#include "android/jni/DisplayMetrics.h"
-#include "android/jni/Resources.h"
-#include "android/jni/Bitmap.h"
-#include "android/jni/BitmapDrawable.h"
-#include "android/jni/PackageManager.h"
+#include "androidjni/Context.h"
+#include "androidjni/Build.h"
+#include "androidjni/DisplayMetrics.h"
+#include "androidjni/Resources.h"
+#include "androidjni/Bitmap.h"
+#include "androidjni/BitmapDrawable.h"
+#include <androidjni/Drawable.h>
+#include "androidjni/PackageManager.h"
 using namespace XFILE;
 
 CFileAndroidApp::CFileAndroidApp(void)
@@ -90,27 +89,61 @@ unsigned int CFileAndroidApp::ReadIcon(unsigned char** lpBuf, unsigned int* widt
 {
   JNIEnv* env = xbmc_jnienv();
   void *bitmapBuf = NULL;
+  int densities[] = { CJNIDisplayMetrics::DENSITY_XXXHIGH, CJNIDisplayMetrics::DENSITY_XXHIGH, CJNIDisplayMetrics::DENSITY_XHIGH, -1 };
 
-  CJNIBitmapDrawable bmp;
+  CJNIBitmap bmp;
+  jclass cBmpDrw = env->FindClass("android/graphics/drawable/BitmapDrawable");
+
   if (CJNIBuild::SDK_INT >= 15 && m_icon)
   {
-    int density = CJNIDisplayMetrics::DENSITY_XHIGH;
-    if (CJNIBuild::SDK_INT >= 18)
-      density = CJNIDisplayMetrics::DENSITY_XXXHIGH;
-    else if (CJNIBuild::SDK_INT >= 16)
-      density = CJNIDisplayMetrics::DENSITY_XXHIGH;
     CJNIResources res = CJNIContext::GetPackageManager().getResourcesForApplication(m_packageName);
     if (res)
-      bmp = res.getDrawableForDensity(m_icon, density);
+    {
+      for (int i=0; densities[i] != -1 && !bmp; ++i)
+      {
+        int density = densities[i];
+        CJNIDrawable drw = res.getDrawableForDensity(m_icon, density);
+        if (xbmc_jnienv()->ExceptionCheck())
+          xbmc_jnienv()->ExceptionClear();
+        else if (!drw);
+        else
+        {
+          if (env->IsInstanceOf(drw.get_raw(), cBmpDrw))
+          {
+            CJNIBitmapDrawable resbmp = drw;
+            if (resbmp)
+              bmp = resbmp.getBitmap();
+          }
+        }
+      }
+    }
   }
-  else
-    bmp = (CJNIBitmapDrawable)CJNIContext::GetPackageManager().getApplicationIcon(m_packageName);
 
-  CJNIBitmap bitmap(bmp.getBitmap());
+  if (!bmp)
+  {
+    CJNIDrawable drw = CJNIContext::GetPackageManager().getApplicationIcon(m_packageName);
+    if (xbmc_jnienv()->ExceptionCheck())
+      xbmc_jnienv()->ExceptionClear();
+    else if (!drw);
+    else
+    {
+      if (env->IsInstanceOf(drw.get_raw(), cBmpDrw))
+      {
+        CJNIBitmapDrawable resbmp = drw;
+        if (resbmp)
+          bmp = resbmp.getBitmap();
+      }
+    }
+  }
+  if (!bmp)
+    return 0;
+
   AndroidBitmapInfo info;
-  AndroidBitmap_getInfo(env, bitmap.get_raw(), &info);
+  AndroidBitmap_getInfo(env, bmp.get_raw(), &info);
   if (!info.width || !info.height)
     return 0;
+
+  CLog::Log(LOGDEBUG, "Found icon for pkg: %s : %d x %d", m_packageName.c_str(), info.width, info.height);
 
   *width = info.width;
   *height = info.height;
@@ -118,11 +151,11 @@ unsigned int CFileAndroidApp::ReadIcon(unsigned char** lpBuf, unsigned int* widt
   int imgsize = *width * *height * 4;
   *lpBuf = new unsigned char[imgsize];
 
-  AndroidBitmap_lockPixels(env, bitmap.get_raw(), &bitmapBuf);
+  AndroidBitmap_lockPixels(env, bmp.get_raw(), &bitmapBuf);
   if (bitmapBuf)
   {
     memcpy(*lpBuf, bitmapBuf, imgsize);
-    AndroidBitmap_unlockPixels(env, bitmap.get_raw());
+    AndroidBitmap_unlockPixels(env, bmp.get_raw());
     return imgsize;
   }
   return 0;

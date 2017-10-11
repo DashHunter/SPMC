@@ -389,6 +389,7 @@ protected:
 
   bool OpenInputStream();
   bool OpenDemuxStream();
+  void OpenDefaultSubtitleStreams(bool reset);
   void OpenDefaultStreams(bool reset = true);
 
   void UpdateApplication(double timeout);
@@ -399,12 +400,9 @@ protected:
   bool m_players_created;
   bool m_bAbortRequest;
 
-  std::string  m_filename; // holds the actual filename
-  std::string  m_mimetype;  // hold a hint to what content file contains (mime type)
   ECacheState  m_caching;
   CFileItem    m_item;
   XbmcThreads::EndTime m_ChannelEntryTimeOut;
-
 
   CCurrentStream m_CurrentAudio;
   CCurrentStream m_CurrentVideo;

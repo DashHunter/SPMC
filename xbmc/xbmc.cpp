@@ -40,6 +40,10 @@
 #include "main/posix/MessagePrinter.h"
 #endif
 
+#if defined(TARGET_ANDROID)
+#include "android/activity/XBMCApp.h"
+#endif
+
 extern "C" int XBMC_Run(bool renderGUI)
 {
   int status = -1;
@@ -61,18 +65,6 @@ extern "C" int XBMC_Run(bool renderGUI)
     CMessagePrinter::DisplayError("ERROR: Unable to create application. Exiting");
     return status;
   }
-
-#if defined(HAVE_BREAKPAD)
-  // Must have our TEMP dir fixed first
-  std::string tempPath = CSpecialProtocol::TranslatePath("special://temp/");
-  google_breakpad::MinidumpDescriptor descriptor(tempPath.c_str());
-  google_breakpad::ExceptionHandler eh(descriptor,
-                                       NULL,
-                                       NULL,
-                                       NULL,
-                                       true,
-                                       -1);
-#endif
 
 #ifdef TARGET_RASPBERRY_PI
   if(!g_RBP.Initialize())
@@ -101,6 +93,11 @@ extern "C" int XBMC_Run(bool renderGUI)
     pEnumerator->RegisterEndpointNotificationCallback(&cMMNC);
     SAFE_RELEASE(pEnumerator);
   }
+#endif
+
+#if defined(TARGET_ANDROID)
+  if (g_advancedSettings.m_videoUseDroidProjectionCapture)
+    CXBMCApp::startProjection();
 #endif
 
   try

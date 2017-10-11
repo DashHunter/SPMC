@@ -13,10 +13,14 @@ CONFIGURE = cp -f $(CONFIG_SUB) $(CONFIG_GUESS) build-aux/ ;\
   ./configure --prefix=$(PREFIX) $(DEBUG)
 
 ifeq ($(OS),android)
-CONFIGURE += --enable-codec=amcodec --enable-breakpad --disable-libcec
+  CONFIGURE += --disable-libcec
+  ifneq ($(CPU),arm64)
+    CONFIGURE += --enable-codec=amcodec
+  endif 
 endif
 
 ifeq ($(Configuration),Release)
+CONFIGURE += --enable-breakpad
 DEBUG = --enable-debug=no
 endif
 
@@ -24,10 +28,11 @@ CONFIGURE += $(CONFIG_EXTRA)
 
 all: $(SOURCE)/lib$(APP_NAME).so
 
-release: DEBUG=--enable-debug=no
+release: DEBUG = --enable-debug=no
+release: CONFIGURE += --enable-breakpad
 release: $(SOURCE)/lib$(APP_NAME).so
 
-debug: DEBUG=--enable-debug=yes
+debug: DEBUG = --enable-debug=yes
 debug: $(SOURCE)/lib$(APP_NAME).so
 
 $(SOURCE)/lib$(APP_NAME).so:

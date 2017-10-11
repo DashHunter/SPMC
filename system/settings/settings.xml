@@ -585,7 +585,7 @@
         </setting>
         <setting id="videoplayer.pauseafterrefreshchange" type="integer" parent="videoplayer.adjustrefreshrate" label="13550" help="36165">
           <level>2</level>
-          <default>0</default>
+          <default>3.0</default>
           <constraints>
             <options>refreshchangedelays</options>
           </constraints>
@@ -674,7 +674,7 @@
         </setting>
         <setting id="videoplayer.hqscalers" type="integer" parent="videoplayer.rendermethod" label="13435" help="36154">
           <level>2</level>
-          <default>20</default>
+          <default>80</default>
           <constraints>
             <options>
               <option label="418">20</option>  <!-- Low -->
@@ -874,6 +874,19 @@
           <control type="edit" format="integer" />
         </setting>
         <setting id="videoplayer.accelh264" type="integer" label="39003">
+          <level>2</level>
+          <default>0</default>
+          <constraints>
+            <options>
+            <option label="20420">9999</option>   <!-- Never -->
+            <option label="39000">800</option>  <!-- HD -->
+            <option label="20422">0</option>  <!-- Always -->
+            </options>
+          </constraints>
+          <control type="spinner" format="string" />
+          <control type="edit" format="integer" />
+        </setting>
+        <setting id="videoplayer.accelhevc" type="integer" label="39008">
           <level>2</level>
           <default>0</default>
           <constraints>
@@ -2114,16 +2127,29 @@
     <category id="upnp" label="20187" help="36322">
       <requirement>HAS_UPNP</requirement>
       <group id="1">
-        <setting id="services.upnpserver" type="boolean" label="21360" help="36323">
+        <setting id="services.upnp" type="boolean" label="21358">
           <level>0</level>
           <default>false</default>
+          <control type="toggle" />
+        </setting>
+        <setting id="services.upnpserver" type="boolean" parent="services.upnp" label="21360" help="36323">
+          <level>0</level>
+          <default>false</default>
+          <dependencies>
+            <dependency type="enable" setting="services.upnp">true</dependency>
+          </dependencies>
           <control type="toggle" />
         </setting>
         <setting id="services.upnpannounce" type="boolean" parent="services.upnpserver" label="20188" help="36324">
           <level>2</level>
           <default>true</default>
           <dependencies>
-            <dependency type="enable" setting="services.upnpserver">true</dependency>
+            <dependency type="enable">
+              <and>
+                <condition setting="services.upnp" operator="is">true</condition>
+                <condition setting="services.upnpserver" operator="is">true</condition>
+              </and>
+            </dependency>
           </dependencies>
           <control type="toggle" />
         </setting>
@@ -2131,7 +2157,12 @@
           <level>2</level>
           <default>false</default>
           <dependencies>
-            <dependency type="enable" setting="services.upnpserver">true</dependency>
+            <dependency type="enable">
+              <and>
+                <condition setting="services.upnp" operator="is">true</condition>
+                <condition setting="services.upnpserver" operator="is">true</condition>
+              </and>
+            </dependency>
           </dependencies>
           <control type="toggle" />
         </setting>
@@ -2139,13 +2170,21 @@
           <level>1</level>
           <default>false</default>
           <dependencies>
-            <dependency type="enable" setting="services.upnpserver">true</dependency>
+            <dependency type="enable">
+              <and>
+                <condition setting="services.upnp" operator="is">true</condition>
+                <condition setting="services.upnpserver" operator="is">true</condition>
+              </and>
+            </dependency>
           </dependencies>
           <control type="toggle" />
         </setting>
         <setting id="services.upnprenderer" type="boolean" label="21881" help="36325">
           <level>1</level>
           <default>false</default>
+          <dependencies>
+            <dependency type="enable" setting="services.upnp">true</dependency>
+          </dependencies>
           <control type="toggle" />
         </setting>
       </group>
@@ -2361,27 +2400,30 @@
       </group>
     </category>
     <category id="smb" label="1200" help="36346">
-      <group id="1">
-        <setting id="smb.winsserver" type="string" label="1207" help="36347">
-          <level>2</level>
-          <default>0.0.0.0</default>
-          <control type="edit" format="ip" />
-        </setting>
+      <group id="1" label="16000">
         <setting id="smb.workgroup" type="string" label="1202" help="36348">
           <level>2</level>
           <default>WORKGROUP</default>
           <control type="edit" format="string" />
         </setting>
-        <setting id="smb.forcev1" type="boolean" label="1209" help="36462">
+      </group>
+      <group id="2" label="36626">
+        <setting id="smb.winsserver" type="string" label="1207" help="36347">
           <level>2</level>
-          <default>false</default>
-          <control type="toggle" />
+          <default>0.0.0.0</default>
+          <control type="edit" format="ip" />
         </setting>
-        <setting id="smb.overwriteconf" type="boolean" label="1224" help="36463">
+        <setting id="smb.maxprotocol" type="integer" label="36621" help="36622">
           <level>2</level>
-          <default>true</default>
-          <control type="toggle" />
-          <visible>false</visible>
+          <default>1</default>
+          <constraints>
+            <options>
+              <option label="36623">1</option>
+              <option label="36624">2</option>
+              <option label="36625">3</option>
+            </options>
+          </constraints>
+          <control type="list" format="integer" />
         </setting>
       </group>
     </category>
@@ -2409,7 +2451,7 @@
             <dependency type="enable">
                 <condition on="property" operator="!is" name="enablemysqlgui" />
             </dependency>
-          </dependencies>	
+          </dependencies>
           <level>1</level>
           <default>3306</default>
           <constraints>
@@ -2424,25 +2466,25 @@
             <dependency type="enable">
                 <condition on="property" operator="!is" name="enablemysqlgui" />
             </dependency>
-          </dependencies> 	
+          </dependencies>
           <level>1</level>
           <constraints>
             <allowempty>true</allowempty>
           </constraints>
           <control type="edit" format="string" />
-        </setting> 
+        </setting>
         <setting id="mysql.pass" type="string" label="15052" help="12326">
         <dependencies>
             <dependency type="enable">
                 <condition on="property" operator="!is" name="enablemysqlgui" />
             </dependency>
-          </dependencies>	
+          </dependencies>
           <level>1</level>
           <constraints>
             <allowempty>true</allowempty>
           </constraints>
           <control type="edit" format="string" />
-        </setting>                        
+        </setting>
       </group>
       <group id="2">
         <setting id="mysql.video" type="string" label="1265" help="1267">
@@ -2451,15 +2493,15 @@
             <allowempty>true</allowempty>
           </constraints>
           <control type="edit" format="string" />
-        </setting> 
+        </setting>
         <setting id="mysql.music" type="string" label="1266" help="1267">
           <level>1</level>
           <constraints>
             <allowempty>true</allowempty>
           </constraints>
           <control type="edit" format="string" />
-        </setting> 
-      </group>	
+        </setting>
+      </group>
     </category>
   </section>
   <section id="system" label="13000" help="36349">

@@ -216,12 +216,15 @@ void CMediaManager::GetNetworkLocations(VECSOURCES &locations, bool autolocation
 #endif// HAS_FILESYSTEM_NFS
 
 #ifdef HAS_UPNP
-    std::string strDevices = g_localizeStrings.Get(33040); //"% Devices"
-    share.strPath = "upnp://";
-    share.strName = StringUtils::Format(strDevices.c_str(), "UPnP"); //"UPnP Devices"
-    locations.push_back(share);
+    if (CSettings::GetInstance().GetBool(CSettings::SETTING_SERVICES_UPNP))
+    {
+      std::string strDevices = g_localizeStrings.Get(33040); //"% Devices"
+      share.strPath = "upnp://";
+      share.strName = StringUtils::Format(strDevices.c_str(), "UPnP"); //"UPnP Devices"
+      locations.push_back(share);
+    }
 #endif
-    
+
 #ifdef HAS_ZEROCONF
     share.strPath = "zeroconf://";
     share.strName = g_localizeStrings.Get(20262);
@@ -543,8 +546,9 @@ std::string CMediaManager::GetDiskUniqueId(const std::string& devicePath)
   CLog::Log(LOGDEBUG, "GetDiskUniqueId: Trying to retrieve ID for path %s", pathVideoTS.c_str());
 
 
-  CDVDInputStreamNavigator dvdNavigator(NULL);
-  dvdNavigator.Open(pathVideoTS.c_str(), "", true);
+  CFileItem item(pathVideoTS, false);
+  CDVDInputStreamNavigator dvdNavigator(NULL, item);
+  dvdNavigator.Open();
   std::string labelString;
   dvdNavigator.GetDVDTitleString(labelString);
   std::string serialString;

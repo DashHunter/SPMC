@@ -27,10 +27,10 @@ endif
 ifeq ($(OS), linux)
   ffmpg_config += --target-os=$(OS) --cpu=$(CPU)
   ffmpg_config += --enable-vdpau --enable-vaapi
-  ffmpg_config += --enable-libvorbis --enable-muxer=ogg --enable-encoder=libvorbis
 endif
 ifeq ($(OS), android)
-  ifeq ($(findstring arm, $(CPU)), arm)
+  ifeq ($(findstring arm64, $(CPU)), arm64)
+  else ifeq ($(findstring arm, $(CPU)), arm)
     ffmpg_config += --cpu=cortex-a9
   else
     ffmpg_config += --cpu=i686 --disable-mmx

@@ -503,7 +503,10 @@ bool CGUIMediaWindow::OnMessage(CGUIMessage& message)
           resetHistory = true;
         }
         if (resetHistory)
+        {
+          m_vecItems->RemoveDiscCache(GetID());
           SetHistoryForPath(m_vecItems->GetPath());
+        }
       }
       if (message.GetParam1() != WINDOW_INVALID)
       { // first time to this window - make sure we set the root path
@@ -1006,9 +1009,9 @@ bool CGUIMediaWindow::OnClick(int iItem)
 #if defined(TARGET_ANDROID)
   else if (pItem->IsAndroidApp())
   {
-    std::string appName = URIUtils::GetFileName(pItem->GetPath());
-    CLog::Log(LOGDEBUG, "CGUIMediaWindow::OnClick Trying to run: %s",appName.c_str());
-    return CXBMCApp::StartActivity(appName);
+    CURL url(pItem->GetPath());
+    CLog::Log(LOGDEBUG, "CGUIMediaWindow::OnClick Trying to run: %s - %s", URIUtils::GetFileName(url.GetFileName()).c_str(), url.GetOption("class").c_str());
+    return CXBMCApp::StartAppActivity(URIUtils::GetFileName(url.GetFileName()), url.GetOption("class"));
   }
   else if (pItem->IsAndroidSetting())
   {
@@ -1345,7 +1348,7 @@ bool CGUIMediaWindow::OnPlayAndQueueMedia(const CFileItemPtr &item)
     std::string mainDVD; 
     for (int i = 0; i < m_vecItems->Size(); i++) 
     { 
-      std::string path = URIUtils::GetFileName(m_vecItems->Get(i)->GetPath()); 
+      std::string path = URIUtils::GetFileName(m_vecItems->Get(i)->GetPath());
       if (StringUtils::EqualsNoCase(path, "VIDEO_TS.IFO")) 
       { 
         mainDVD = path; 
@@ -1410,9 +1413,10 @@ void CGUIMediaWindow::UpdateFileList()
   {
     int iPlaylist=m_guiState->GetPlaylist();
     int nSong = g_playlistPlayer.GetCurrentSong();
+
     CFileItem playlistItem;
-    if (nSong > -1 && iPlaylist > -1)
-      playlistItem=*g_playlistPlayer.GetPlaylist(iPlaylist)[nSong];
+    if (iPlaylist > -1 && nSong > -1 && nSong < g_playlistPlayer.GetPlaylist(iPlaylist).size())
+      playlistItem = *g_playlistPlayer.GetPlaylist(iPlaylist)[nSong];
 
     g_playlistPlayer.ClearPlaylist(iPlaylist);
     g_playlistPlayer.Reset();

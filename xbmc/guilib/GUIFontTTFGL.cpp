@@ -53,6 +53,7 @@ CGUIFontTTFGL::~CGUIFontTTFGL(void)
   // destructed before the CGUIFontTTFGL goes out of scope, because
   // our virtual methods won't be accessible after this point
   m_dynamicCache.Flush();
+  DeleteHardwareTexture();
 }
 
 bool CGUIFontTTFGL::FirstBegin()
@@ -232,7 +233,7 @@ void CGUIFontTTFGL::LastEnd()
       glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glMatrixModview.Get());
 
       // Bind the buffer to the OpenGL context's GL_ARRAY_BUFFER binding point
-      glBindBuffer(GL_ARRAY_BUFFER, (GLuint) ((long)(m_vertexTrans[i].vertexBuffer->bufferHandle) & 0xffff));
+      glBindBuffer(GL_ARRAY_BUFFER, m_vertexTrans[i].vertexBuffer->bufferHandle);
 
       // Do the actual drawing operation, split into groups of characters no
       // larger than the pre-determined size of the element array
@@ -285,7 +286,7 @@ CVertexBuffer CGUIFontTTFGL::CreateVertexBuffer(const std::vector<SVertex> &vert
   // Unbind GL_ARRAY_BUFFER
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-  return CVertexBuffer((void *) bufferHandle, vertices.size() / 4, this);
+  return CVertexBuffer(bufferHandle, vertices.size() / 4, this);
 }
 
 void CGUIFontTTFGL::DestroyVertexBuffer(CVertexBuffer &buffer) const
@@ -293,7 +294,7 @@ void CGUIFontTTFGL::DestroyVertexBuffer(CVertexBuffer &buffer) const
   if (buffer.bufferHandle != 0)
   {
     // Release the buffer name for reuse
-    glDeleteBuffers(1, (GLuint *) &buffer.bufferHandle);
+    glDeleteBuffers(1, &buffer.bufferHandle);
     buffer.bufferHandle = 0;
   }
 }

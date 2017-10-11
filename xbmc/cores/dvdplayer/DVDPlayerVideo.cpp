@@ -186,6 +186,8 @@ bool CDVDPlayerVideo::OpenStream( CDVDStreamInfo &hint )
   if(hint.flags & AV_DISPOSITION_ATTACHED_PIC)
     return false;
 
+  if (hint.stereo_mode == "mono")
+    hint.stereo_mode = GetStereoMode();
   CLog::Log(LOGNOTICE, "Creating video codec with codec id: %i", hint.codec);
   CDVDVideoCodec* codec = CDVDFactoryCodec::CreateVideoCodec(hint, info);
   if(!codec)
@@ -1185,8 +1187,7 @@ int CDVDPlayerVideo::OutputPicture(const DVDVideoPicture* src, double pts)
   }
 
   // make sure waiting time is not negative
-  // and do not stall after seeks
-  int maxWaitTime = std::min(std::max(DVD_TIME_TO_MSEC(iSleepTime) + 500, 50), 500);
+  int maxWaitTime = std::max(DVD_TIME_TO_MSEC(iSleepTime) + 500, 50);
   // don't wait when going ff
   if (m_speed > DVD_PLAYSPEED_NORMAL)
     maxWaitTime = std::max(DVD_TIME_TO_MSEC(iSleepTime), 0);

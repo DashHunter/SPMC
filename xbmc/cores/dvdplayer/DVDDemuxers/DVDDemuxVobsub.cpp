@@ -59,8 +59,11 @@ bool CDVDDemuxVobsub::Open(const std::string& filename, int source, const std::s
     vobsub += ".sub";
   }
 
-  m_Input.reset(CDVDFactoryInputStream::CreateInputStream(NULL, vobsub, ""));
-  if(!m_Input.get() || !m_Input->Open(vobsub.c_str(), "video/x-vobsub", false))
+  CFileItem item(vobsub, false);
+  item.SetMimeType("video/x-vobsub");
+  item.SetContentLookup(false);
+  m_Input.reset(CDVDFactoryInputStream::CreateInputStream(NULL, item));
+  if(!m_Input.get() || !m_Input->Open())
     return false;
 
   m_Demuxer.reset(new CDVDDemuxFFmpeg());
@@ -242,4 +245,16 @@ bool CDVDDemuxVobsub::ParseTimestamp(SState& state, char* line)
   timestamp.pts = DVD_SEC_TO_TIME(state.delay + h*3600.0 + m*60.0 + s + ms*0.001);
   m_Timestamps.push_back(timestamp);
   return true;
+}
+
+void CDVDDemuxVobsub::EnableStream(int id, bool enable)
+{
+  for (auto &stream : m_Streams)
+  {
+    if (stream->iId == id)
+    {
+      stream->m_discard = !enable;
+      break;
+    }
+  }
 }

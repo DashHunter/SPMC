@@ -627,8 +627,7 @@ namespace VIDEO
         return INFO_CANCELLED;
       else if (retVal == 0 && CSettings::GetInstance().GetBool(CSettings::SETTING_VIDEOLIBRARY_IMPORTALL))
       {
-        pItem->GetVideoInfoTag()->m_strTitle = CURL(pItem->GetPath()).GetFileNameWithoutPath();
-        CURL::Decode(pItem->GetVideoInfoTag()->m_strTitle);
+        pItem->GetVideoInfoTag()->m_strTitle = CURL::Decode(CURL(pItem->GetPath()).GetFileNameWithoutPath());
         if (AddVideo(pItem, CONTENT_MOVIES, bDirNames, useLocal) < 0)
           return INFO_ERROR;
         return INFO_ADDED;
@@ -1279,14 +1278,12 @@ namespace VIDEO
         movieDetails.m_iDbId = lResult;
         movieDetails.m_type = MediaTypeEpisode;
         movieDetails.m_strShowTitle = showInfo ? showInfo->m_strTitle : "";
-        if (movieDetails.m_fEpBookmark > 0)
+        if (movieDetails.m_EpBookmark.timeInSeconds > 0)
         {
           movieDetails.m_strFileNameAndPath = pItem->GetPath();
-          CBookmark bookmark;
-          bookmark.timeInSeconds = movieDetails.m_fEpBookmark;
-          bookmark.seasonNumber = movieDetails.m_iSeason;
-          bookmark.episodeNumber = movieDetails.m_iEpisode;
-          m_database.AddBookMarkForEpisode(movieDetails, bookmark);
+          movieDetails.m_EpBookmark.seasonNumber = movieDetails.m_iSeason;
+          movieDetails.m_EpBookmark.episodeNumber = movieDetails.m_iEpisode;
+          m_database.AddBookMarkForEpisode(movieDetails, movieDetails.m_EpBookmark);
         }
       }
     }
@@ -1554,15 +1551,16 @@ namespace VIDEO
         }
         else
         {
-          file->iEpisode = 0;
-          file->iSeason = 0;
-
-          if (m_database.GetEpisodeId(file->strPath, file->iEpisode, file->iSeason) > -1)
+          // Never add the same file twice
+          if (m_database.GetEpisodeId(file->strPath, -1, -1) >= 0)
           {
             if (m_handle)
               m_handle->SetText(g_localizeStrings.Get(20415));
             continue;
           }
+
+          file->iEpisode = 0;
+          file->iSeason = 0;
         }
       }
 
@@ -1653,19 +1651,19 @@ namespace VIDEO
         item.SetPath(file->strPath);
         if (!imdb.GetEpisodeDetails(guide->cScraperUrl, *item.GetVideoInfoTag(), pDlgProgress))
           return INFO_NOT_FOUND; // TODO: should we just skip to the next episode?
-          
+
         // Only set season/epnum from filename when it is not already set by a scraper
         if (item.GetVideoInfoTag()->m_iSeason == -1)
           item.GetVideoInfoTag()->m_iSeason = guide->iSeason;
         if (item.GetVideoInfoTag()->m_iEpisode == -1)
           item.GetVideoInfoTag()->m_iEpisode = guide->iEpisode;
-          
+
         if (AddVideo(&item, CONTENT_TVSHOWS, file->isFolder, useLocal, &showInfo) < 0)
           return INFO_ERROR;
       }
       else
       {
-        if (!CSettings::GetInstance().GetBool(CSettings::SETTING_VIDEOLIBRARY_IMPORTALL))
+        if (!episodes.empty() || !CSettings::GetInstance().GetBool(CSettings::SETTING_VIDEOLIBRARY_IMPORTALL))
         {
           CLog::Log(LOGDEBUG,"%s - no match for show: '%s', season: %d, episode: %d.%d, airdate: '%s', title: '%s'",
                     __FUNCTION__, showInfo.m_strTitle.c_str(), file->iSeason, file->iEpisode, file->iSubepisode,
@@ -1675,8 +1673,7 @@ namespace VIDEO
         {
           CFileItem item;
           item.SetPath(file->strPath);
-          item.GetVideoInfoTag()->m_strTitle = CURL(file->strPath).GetFileNameWithoutPath();
-          CURL::Decode(item.GetVideoInfoTag()->m_strTitle);
+          item.GetVideoInfoTag()->m_strTitle = CURL::Decode(CURL(file->strPath).GetFileNameWithoutPath());
           item.GetVideoInfoTag()->m_strSortTitle = item.GetVideoInfoTag()->m_strTitle;
           item.GetVideoInfoTag()->m_iSeason = file->iSeason;
           item.GetVideoInfoTag()->m_iEpisode = file->iEpisode;

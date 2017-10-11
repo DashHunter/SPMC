@@ -54,7 +54,7 @@
 #include "utils/StringUtils.h"
 #include "utils/XMLUtils.h"
 #if defined(TARGET_ANDROID)
-#include "android/jni/Build.h"
+#include "androidjni/Build.h"
 #include "utils/SysfsUtils.h"
 #include "utils/AMLUtils.h"
 #endif
@@ -398,6 +398,16 @@ CSysInfo::CSysInfo(void) : CInfoLoader(15 * 1000)
 {
   memset(MD5_Sign, 0, sizeof(MD5_Sign));
   m_iSystemTimeTotalUp = 0;
+
+#if defined(TARGET_ANDROID)
+  if (m_hasFTV3D == -1)
+  {
+    if (SysfsUtils::HasRW("/sys/class/graphics/fb0/format_3d"))  // AFTV
+      m_hasFTV3D = 1;
+    else
+      m_hasFTV3D = 0;
+  }
+#endif
 }
 
 CSysInfo::~CSysInfo()
@@ -878,7 +888,7 @@ bool CSysInfo::HWSupportsStereo(const int mode)
 #if defined(TARGET_ANDROID)
   if (aml_present())
     return aml_supports_stereo(mode);
-  else if (SysfsUtils::Has("/sys/class/graphics/fb0/3d_present"))  // AFTV
+  else if (m_hasFTV3D > 0)  // AFTV
     return true;
 #endif
   return false;
@@ -889,7 +899,7 @@ void CSysInfo::HWSetStereoMode(const int mode, const int view)
 #if defined(TARGET_ANDROID)
   if (aml_present())
     aml_set_stereo_mode(mode, view);
-  else if (SysfsUtils::Has("/sys/class/graphics/fb0/3d_present"))  // AFTV
+  else if (m_hasFTV3D > 0)  // AFTV
   {
     switch(mode)
     {
@@ -908,6 +918,7 @@ void CSysInfo::HWSetStereoMode(const int mode, const int view)
 }
 
 CSysInfo::WindowsVersion CSysInfo::m_WinVer = WindowsVersionUnknown;
+int CSysInfo::m_hasFTV3D = -1;
 
 bool CSysInfo::IsWindowsVersion(WindowsVersion ver)
 {
@@ -1044,7 +1055,7 @@ const std::string& CSysInfo::GetKernelCpuFamily(void)
 
 int CSysInfo::GetXbmcBitness(void)
 {
-#if defined (__aarch64__) || defined(__arm64__) || defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_X64) || \
+#if defined (__aarch64__) || defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_X64) || \
   defined(_M_AMD64) || defined(__ppc64__) || defined(__mips64)
   return 64;
 #elif defined(__thumb__) || defined(_M_ARMT) || defined(__arm__) || defined(_M_ARM) || defined(__mips__) || defined(mips) || defined(__mips) || defined(i386) || \

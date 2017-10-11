@@ -121,12 +121,15 @@ APP_PACKAGE=${APP_PACKAGE-$(${AWK} '/APP_PACKAGE/ {print $2}' version.txt)}
 APP_NAME=${APP_NAME-$(${AWK} '/APP_NAME/ {print $2}' version.txt)}
 APP_NAME_LC=$(echo $APP_NAME | ${AWK} '{print tolower($0)}')
 APP_NAME_UC=$(echo $APP_NAME | ${AWK} '{print toupper($0)}')
+APP_EMAIL=${APP_NAME-$(${AWK} '/EMAIL/ {print $2}' version.txt)}
 APP_VERSION_MAJOR=${APP_VERSION_MAJOR-$(${AWK} '/VERSION_MAJOR/ {print $2}' version.txt)}
 APP_VERSION_MINOR=${APP_VERSION_MINOR-$(${AWK} '/VERSION_MINOR/ {print $2}' version.txt)}
 APP_VERSION_TAG=${APP_VERSION_TAG-$(${AWK} '/VERSION_TAG/ {print $2}' version.txt)}
 APP_VERSION_TAG_LC=$(echo $APP_VERSION_TAG | ${AWK} '{print tolower($0)}')
 APP_VERSION_CODE=${APP_VERSION_CODE-$(${AWK} '/VERSION_CODE/ {print $2}' version.txt)}
 APP_ADDON_API=${APP_ADDON_API-$(${AWK} '/ADDON_API/ {print $2}' version.txt)}
+APP_STICKYURL=${APP_STICKYURL-$(${AWK} '/APP_STICKYURL/ {print $2}' version.txt)}
+APP_EMAIL=${APP_EMAIL-$(${AWK} '/APP_EMAIL/ {print $2}' version.txt)}
 if test "$APP_NAME" != "" && test "$APP_VERSION_MAJOR" != "" && test "$APP_VERSION_MINOR" != "" \
 && test "$APP_VERSION_CODE" != "" && test "$APP_ADDON_API" != ""; then
   APP_VERSION=${APP_VERSION_MAJOR}.${APP_VERSION_MINOR}
@@ -138,6 +141,7 @@ if test "$APP_NAME" != "" && test "$APP_VERSION_MAJOR" != "" && test "$APP_VERSI
   AC_SUBST(APP_NAME)
   AC_SUBST(APP_NAME_LC)
   AC_SUBST(APP_NAME_UC)
+  AC_SUBST(APP_EMAIL)
   AC_SUBST(APP_VERSION)
   AC_SUBST(APP_VERSION_MAJOR)
   AC_SUBST(APP_VERSION_MINOR)
@@ -145,6 +149,8 @@ if test "$APP_NAME" != "" && test "$APP_VERSION_MAJOR" != "" && test "$APP_VERSI
   AC_SUBST(APP_VERSION_TAG_LC)
   AC_SUBST(APP_VERSION_CODE)
   AC_SUBST(APP_ADDON_API)
+  AC_SUBST(APP_STICKYURL)
+  AC_SUBST(APP_EMAIL)
 
   dashes="------------------------"
   final_message="\n  ${APP_NAME} Configuration:"
@@ -542,7 +548,7 @@ PASSED_CXXFLAGS=$CXXFLAGS # Hack to override autoconf default values
 AC_PROG_CXX
 AX_PROG_CXX_FOR_BUILD
 CXXFLAGS="$PASSED_CXXFLAGS $DEFAULT_COMPILE_FLAGS"
-AX_CXX_COMPILE_STDCXX_11(,[optional])
+AX_CXX_COMPILE_STDCXX_11([noext],[mandatory])
 AC_PROG_LIBTOOL
 AC_PROG_AWK
 AC_PROG_LN_S
@@ -671,6 +677,19 @@ case $host in
      use_wayland=no
      build_shared_lib=yes
      ;;
+  aarch64*-*linux-android*)
+     target_platform=target_android
+     use_arch="aarch64"
+     use_cpu=arm64
+     ARCH="aarch64"
+     use_joystick=no
+     use_neon=yes
+     use_gles=yes
+     use_optical_drive=no
+     use_x11=no
+     use_wayland=no
+     build_shared_lib=yes
+     ;;
   mips*-*-linux-gnu*)
      target_platform=target_linux
      ARCH="mips"
@@ -691,8 +710,8 @@ if test "$target_platform" = "target_android" ; then
   USE_ANDROID=1
   webserver_checkdepends=yes
   CFLAGS="$CFLAGS -Wno-psabi"
-  DROID_DVDLIB_SEEK64="-D_FILE_OFFSET_BITS=64 -D_OFF_T_DEFINED_ -Doff_t=off64_t -Dlseek=lseek64"
   CXXFLAGS="$CXXFLAGS -Wno-psabi"
+  LIBS="$LIBS -landroidjni"
   AC_DEFINE(HAS_EGLGLES, [1], [Define if supporting EGL based GLES Framebuffer])
 fi
 
@@ -924,11 +943,6 @@ AC_LANG_POP([C++])
 # Check inotify availability
 AC_CHECK_HEADER([sys/inotify.h], AC_DEFINE([HAVE_INOTIFY],[1],[Define if we have inotify]),)
 
-# Checks for boost headers using CXX instead of CC
-AC_LANG_PUSH([C++])
-AC_CHECK_HEADER([boost/circular_buffer.hpp],, AC_MSG_ERROR($missing_library))
-AC_LANG_POP([C++])
-
 # Python
 if test -z "$PYTHON_NOVERSIONCHECK"; then
   AX_PYTHON_DEVEL([>= '2.6'])
@@ -1060,8 +1074,6 @@ AC_CHECK_HEADER([mpeg2dec/mpeg2convert.h],, AC_MSG_ERROR($missing_library),
   AC_INCLUDES_DEFAULT()
   [#include <mpeg2dec/mpeg2.h>])
 AC_CHECK_HEADER([jpeglib.h],,        AC_MSG_ERROR($missing_library))
-AC_CHECK_HEADER([ogg/ogg.h],,        AC_MSG_ERROR($missing_library))
-AC_CHECK_HEADER([vorbis/vorbisfile.h],, AC_MSG_ERROR($missing_library))
 PKG_CHECK_MODULES([LIBDCADEC], [dcadec],, AC_MSG_ERROR([libdcadec not found]))
 
 PKG_CHECK_MODULES([LIBCURL], [libcurl],, AC_MSG_ERROR([libcurl not found]))
@@ -1169,7 +1181,9 @@ if test "$target_platform" = "target_android" ; then
   AC_CHECK_LIB([android],     [main],, AC_MSG_ERROR($missing_library))
   AC_CHECK_LIB([log],         [__android_log_vprint],, AC_MSG_ERROR($missing_library))
   AC_CHECK_LIB([jnigraphics],     [main],, AC_MSG_ERROR($missing_library))
+  AC_CHECK_LIB([mediandk],     [main],, AC_MSG_ERROR($missing_library))
 fi
+LIBS="$LIBS -lexpat -lap4"
 PKG_CHECK_MODULES([LIBXML], [libxml-2.0],
   [INCLUDES="$INCLUDES $LIBXML_CFLAGS"; LIBS="$LIBS $LIBXML_LIBS"],
   AC_MSG_ERROR($missing_library))
@@ -2409,9 +2423,6 @@ OUTPUT_FILES="Makefile \
     tools/EventClients/Clients/OSXRemote/Makefile \
     xbmc/peripherals/bus/Makefile \
     xbmc/peripherals/devices/Makefile \
-    xbmc/android/activity/Makefile \
-    xbmc/android/loader/Makefile \
-    xbmc/android/jni/Makefile \
     xbmc/utils/Makefile \
     xbmc/main/Makefile \
     xbmc/main/posix/Makefile \
@@ -2427,28 +2438,41 @@ OUTPUT_FILES="Makefile \
     addons/xbmc.addon/addon.xml \
     "
 
+OUTPUT_FILES_DROID=" \
+    xbmc/android/activity/Makefile \
+    "
+
 OUTPUT_FILES_JAVA_DROID=" \
     tools/android/packaging/Makefile \
+    tools/android/packaging/xbmc/build.gradle \
     tools/android/packaging/xbmc/AndroidManifest.xml \
-    tools/android/packaging/xbmc/src/org/xbmc/kodi/Splash.java \
-    tools/android/packaging/xbmc/src/org/xbmc/kodi/Main.java \
-    tools/android/packaging/xbmc/src/org/xbmc/kodi/XBMCBroadcastReceiver.java \
-    tools/android/packaging/xbmc/src/org/xbmc/kodi/XBMCOnFrameAvailableListener.java \
-    tools/android/packaging/xbmc/src/org/xbmc/kodi/XBMCSettingsContentObserver.java \
-    tools/android/packaging/xbmc/src/org/xbmc/kodi/XBMCOnAudioFocusChangeListener.java \
-    tools/android/packaging/xbmc/src/org/xbmc/kodi/XBMCVideoView.java \
-    tools/android/packaging/xbmc/src/org/xbmc/kodi/XBMCImageContentProvider.java \
-    tools/android/packaging/xbmc/src/org/xbmc/kodi/XBMCMediaContentProvider.java \
-    tools/android/packaging/xbmc/src/org/xbmc/kodi/XBMCRecommendationBuilder.java \
-    tools/android/packaging/xbmc/src/org/xbmc/kodi/XBMCJsonRPC.java \
-    tools/android/packaging/xbmc/src/org/xbmc/kodi/XBMCSearchableActivity.java \
+    tools/android/packaging/xbmc/src/Splash.java \
+    tools/android/packaging/xbmc/src/Main.java \
+    tools/android/packaging/xbmc/src/XBMCBroadcastReceiver.java \
+    tools/android/packaging/xbmc/src/XBMCSettingsContentObserver.java \
+    tools/android/packaging/xbmc/src/XBMCMainView.java \
+    tools/android/packaging/xbmc/src/XBMCVideoView.java \
+    tools/android/packaging/xbmc/src/XBMCImageContentProvider.java \
+    tools/android/packaging/xbmc/src/XBMCMediaContentProvider.java \
+    tools/android/packaging/xbmc/src/XBMCRecommendationBuilder.java \
+    tools/android/packaging/xbmc/src/XBMCJsonRPC.java \
+    tools/android/packaging/xbmc/src/XBMCSearchableActivity.java \
+    tools/android/packaging/xbmc/src/XBMCProperties.java \
+    tools/android/packaging/xbmc/src/XBMCCrashHandler.java \
+    tools/android/packaging/xbmc/src/XBMCProjection.java \
+    tools/android/packaging/xbmc/src/XBMCMediaSession.java \
     tools/android/packaging/xbmc/activity_main.xml \
     tools/android/packaging/xbmc/searchable.xml \
     tools/android/packaging/xbmc/strings.xml \
+    tools/android/packaging/xbmc/src/interfaces/XBMCAudioManagerOnAudioFocusChangeListener.java \
+    tools/android/packaging/xbmc/src/interfaces/XBMCSurfaceTextureOnFrameAvailableListener.java \
+    tools/android/packaging/xbmc/src/interfaces/XBMCNsdManagerDiscoveryListener.java \
+    tools/android/packaging/xbmc/src/interfaces/XBMCNsdManagerRegistrationListener.java \
+    tools/android/packaging/xbmc/src/interfaces/XBMCNsdManagerResolveListener.java \
     "
 
 if test "$target_platform" = "target_android" ; then
-OUTPUT_FILES="$OUTPUT_FILES $OUTPUT_FILES_JAVA_DROID"
+OUTPUT_FILES="$OUTPUT_FILES $OUTPUT_FILES_DROID $OUTPUT_FILES_JAVA_DROID"
 fi
 
 if test "$use_webserver" = "yes"; then
@@ -2523,9 +2547,6 @@ AC_SUBST(OUTPUT_FILES)
 AC_SUBST(HAVE_XBMC_NONFREE)
 AC_SUBST(USE_ASAP_CODEC)
 AC_SUBST(LIBCURL_BASENAME)
-AC_SUBST(LIBVORBISFILE_BASENAME)
-AC_SUBST(LIBOGG_BASENAME)
-AC_SUBST(LIBVORBIS_BASENAME)
 AC_SUBST(LIBASS_BASENAME)
 AC_SUBST(LIBMEPG2_BASENAME)
 AC_SUBST_FILE(XBMC_STANDALONE_SH_PULSE)
@@ -2616,7 +2637,7 @@ XB_CONFIG_MODULE([lib/libdvd/libdvdcss], [
   ./configure \
     CC="$CC" \
     CXX="$CXX" \
-    CFLAGS="$CFLAGS $DROID_DVDLIB_SEEK64" \
+    CFLAGS="$CFLAGS" \
     --prefix="${prefix}" --includedir="${includedir}" --libdir="${libdir}" --datadir="${datadir}" \
     --host=$host_alias \
     --build=$build_alias \
@@ -2628,7 +2649,7 @@ XB_CONFIG_MODULE([lib/libdvd/libdvdcss], [
 
 XB_CONFIG_MODULE([lib/libdvd/libdvdread], [
   ./configure2 \
-    --extra-cflags="$CFLAGS $DVDREAD_CFLAGS -I`pwd`/../libdvdcss/src $DROID_DVDLIB_SEEK64" \
+    --extra-cflags="$CFLAGS $DVDREAD_CFLAGS -I`pwd`/../libdvdcss/src" \
     --prefix="${prefix}" --includedir="${includedir}" --libdir="${libdir}" --datadir="${datadir}" \
     --host=$host_alias \
     --build=$build_alias \
@@ -2645,7 +2666,7 @@ XB_CONFIG_MODULE([lib/libdvd/libdvdread], [
 
 XB_CONFIG_MODULE([lib/libdvd/libdvdnav], [
   ./configure2 \
-    --extra-cflags="$CFLAGS $DVDREAD_CFLAGS -I`pwd`/../includes $DROID_DVDLIB_SEEK64" \
+    --extra-cflags="$CFLAGS $DVDREAD_CFLAGS -I`pwd`/../includes" \
     --extra-ldflags="-L`pwd`/../libdvdread/obj" \
     --with-dvdread-config="`pwd`/../dvdread-config" \
     --prefix="${prefix}" --includedir="${includedir}" --libdir="${libdir}" --datadir="${datadir}" \
